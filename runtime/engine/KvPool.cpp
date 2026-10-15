@@ -71,10 +71,12 @@ KvPageAcquisition KvPool::acquirePages(uint32_t count) {
     ++activePages_;
   }
   
-  // Track INT4 compression savings if enabled
+  // Phase 3: Int4 KV cache - track compression for allocated pages
+  // Note: actual quantize/dequantize happens in PageStorage write/read operations
   if (int4Cache_ && selected.size() > 0) {
-    size_t originalSize = selected.size() * storage_.bytesPerPage();
-    size_t compressedSize = int4Cache_->getCompressedSize(originalSize / sizeof(float)) * sizeof(uint8_t);
+    size_t floatCount = (selected.size() * storage_.bytesPerPage()) / sizeof(float);
+    size_t compressedSize = int4Cache_->getCompressedSize(floatCount) * sizeof(uint8_t);
+    size_t originalSize = floatCount * sizeof(float);
     compressionSavings_ += (originalSize - compressedSize);
   }
   
