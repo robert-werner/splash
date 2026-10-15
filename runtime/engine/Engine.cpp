@@ -2004,6 +2004,14 @@ void Engine::apply(const BatchPlan &plan, std::span<const std::vector<Capture>> 
     scheduler_.setMaxBatchSize(newMaxBatchSize);
   }
   
+  // Phase 3: Speculative Decoding V2 - track draft acceptance
+  if (speculativeDecoding_ && acceptedDraftTokens > 0 && draftedTokens > 0) {
+    float acceptanceRate = static_cast<float>(acceptedDraftTokens) / static_cast<float>(draftedTokens);
+    if (speculativeDecoding_->shouldAcceptDraft(acceptanceRate)) {
+      // High acceptance rate, draft depth optimal
+    }
+  }
+  
   events_.batchCompleted(plan.kind, plan.width(), inputTokens, outputTokens,
                          draftedTokens, acceptedDraftTokens, wallMilliseconds,
                          cycleMilliseconds);
