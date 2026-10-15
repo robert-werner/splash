@@ -339,6 +339,32 @@ std::unique_ptr<RuntimeBootstrap> RuntimeBootstrap::start(
   std::unique_ptr<NativeRuntime> nativeLoop;
   try {
     connectToGovernor(config.nativeLoop.engine, resources->memoryGovernor());
+    
+    // Phase 2 & Phase 3 runtime integration
+    if (config.resources.lazyAneAllocation) {
+      config.nativeLoop.engine.lazyAneAllocation = true;
+    }
+    if (config.resources.writeCoalescing) {
+      config.nativeLoop.engine.writeCoalescing = true;
+    }
+    if (config.resources.kvDefragmentation) {
+      config.nativeLoop.engine.kvDefragmentation = true;
+    }
+    if (config.resources.int4KvCache) {
+      config.nativeLoop.engine.int4Cache = ops::Int4KvCacheConfig{.enabled = true};
+    }
+    if (config.resources.visionTextOnly) {
+      config.nativeLoop.engine.visionConditional = ops::VisionConditionalConfig{
+        .enabled = true, .textOnlyMode = true
+      };
+    }
+    if (config.resources.kernelFusion) {
+      config.nativeLoop.engine.kernelFusion = ops::KernelFusionConfig{.enabled = true};
+    }
+    if (config.resources.speculativeDecoding) {
+      config.nativeLoop.engine.speculativeDecoding = ops::SpeculativeDecodingV2Config{.enabled = true};
+    }
+    
     config.nativeLoop.weights = &resources->releasableMemory();
     config.nativeLoop.weightAdmission = resources->memoryGovernor().allocationAdmission();
     // The parser and engine consume the same resolved ceiling. In automatic

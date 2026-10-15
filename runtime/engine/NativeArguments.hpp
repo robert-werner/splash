@@ -59,6 +59,17 @@ struct NativeArguments final {
   // Neural Engine when that is faster (splash serve --disable-ane turns it
   // off).
   bool neuralEngine = true;
+  
+  // Phase 2 optimizations
+  bool lazyAneAllocation = false;
+  bool writeCoalescing = false;
+  bool kvDefragmentation = false;
+  
+  // Phase 3 optimizations
+  bool int4KvCache = false;
+  bool visionTextOnly = false;
+  bool kernelFusion = false;
+  bool speculativeDecoding = false;
 };
 
 // Reads `serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto

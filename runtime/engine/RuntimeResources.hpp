@@ -145,6 +145,15 @@ struct RuntimeResourcesConfig {
   // boundaries; after Ready the transport control handler keeps it current.
   std::function<MemoryPressure()> memoryPressure;
   std::function<bool()> cancelled;
+  
+  // Phase 2 & Phase 3 optimization flags
+  bool lazyAneAllocation = false;
+  bool writeCoalescing = false;
+  bool kvDefragmentation = false;
+  bool int4KvCache = false;
+  bool visionTextOnly = false;
+  bool kernelFusion = false;
+  bool speculativeDecoding = false;
 };
 
 enum class RuntimeResourceFailure {

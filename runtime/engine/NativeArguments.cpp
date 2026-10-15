@@ -168,6 +168,34 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       result.dynamicBatching = value == "on";
     } else if (option == "--continuous-attention-threshold") {
       result.continuousAttentionThreshold = parseContinuousAttentionThreshold(value);
+    } else if (option == "--lazy-ane-allocation") {
+      if (value != "on" && value != "off")
+        throw UsageError("--lazy-ane-allocation requires on or off");
+      result.lazyAneAllocation = value == "on";
+    } else if (option == "--write-coalescing") {
+      if (value != "on" && value != "off")
+        throw UsageError("--write-coalescing requires on or off");
+      result.writeCoalescing = value == "on";
+    } else if (option == "--kv-defragmentation") {
+      if (value != "on" && value != "off")
+        throw UsageError("--kv-defragmentation requires on or off");
+      result.kvDefragmentation = value == "on";
+    } else if (option == "--int4-kv-cache") {
+      if (value != "on" && value != "off")
+        throw UsageError("--int4-kv-cache requires on or off");
+      result.int4KvCache = value == "on";
+    } else if (option == "--vision-text-only") {
+      if (value != "on" && value != "off")
+        throw UsageError("--vision-text-only requires on or off");
+      result.visionTextOnly = value == "on";
+    } else if (option == "--kernel-fusion") {
+      if (value != "on" && value != "off")
+        throw UsageError("--kernel-fusion requires on or off");
+      result.kernelFusion = value == "on";
+    } else if (option == "--speculative-decoding") {
+      if (value != "on" && value != "off")
+        throw UsageError("--speculative-decoding requires on or off");
+      result.speculativeDecoding = value == "on";
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
     } else {
