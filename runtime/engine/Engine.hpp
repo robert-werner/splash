@@ -3,6 +3,10 @@
 #include "ops/Vision.hpp"
 #include "engine/Cache.hpp"
 #include "engine/DynamicBatching.hpp"
+#include "engine/MemoryTelemetry.hpp"
+#include "engine/LazyAneAllocation.hpp"
+#include "engine/WriteCoalescing.hpp"
+#include "engine/KvDefragmentation.hpp"
 #include "engine/MemoryGovernor.hpp"
 #include "engine/Scheduler.hpp"
 #include "engine/Types.hpp"
@@ -688,6 +692,7 @@ private:
   EngineEventSink &events_;
   Scheduler scheduler_;
   std::optional<DynamicBatching> dynamicBatching_;
+  MemoryTelemetry telemetry_;
   std::unordered_map<uint64_t, Request> requests_;
   // Pressure preempted work, a lane is still resident, and memory is still
   // short (growth is paused or allocationFailed_), up to the drain's end.

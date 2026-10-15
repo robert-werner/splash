@@ -1,4 +1,5 @@
 #include "engine/Cache.hpp"
+#include "engine/WriteCoalescing.hpp"
 
 #include "AwakeClock.hpp"
 #include "engine/DiskLabels.hpp"

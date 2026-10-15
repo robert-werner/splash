@@ -28,6 +28,9 @@ CACHE_SOURCES := \
 BACKEND_CONTROL_SOURCES := \
 	runtime/engine/Scheduler.cpp \
 	runtime/engine/DynamicBatching.cpp \
+	runtime/engine/LazyAneAllocation.cpp \
+	runtime/engine/WriteCoalescing.cpp \
+	runtime/engine/KvDefragmentation.cpp \
 	runtime/model/DraftContextPlan.cpp \
 	$(CACHE_SOURCES) \
 	runtime/engine/Engine.cpp
