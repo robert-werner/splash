@@ -1,5 +1,6 @@
 #include "engine/KvPool.hpp"
 #include "engine/KvDefragmentation.hpp"
+#include "ops/Int4KvCache.hpp"
 #include "AwakeClock.hpp"
 
 #include <algorithm>
