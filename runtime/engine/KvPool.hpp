@@ -1,11 +1,16 @@
 #pragma once
 
 #include "ops/PagedKv.hpp"
+#include "engine/KvDefragmentation.hpp"
 
 #include <cstdint>
 #include <limits>
 #include <span>
 #include <vector>
+
+namespace splash::ops {
+class Int4KvCache;
+}
 
 namespace splash::engine {
 
@@ -124,6 +129,9 @@ public:
   void defragmentIfNeeded(const struct DefragmentationPolicy &policy,
                           struct DefragmentationResult &result);
   
+  void setInt4Cache(ops::Int4KvCache* cache) { int4Cache_ = cache; }
+  size_t compressionSavings() const noexcept { return compressionSavings_; }
+  
   [[nodiscard]] KvPoolSnapshot snapshot() const;
 
 private:
@@ -194,6 +202,9 @@ private:
   uint32_t activePages_ = 0;
   uint32_t prefixPages_ = 0;
   uint32_t allocatedExtents_ = 0;
+  
+  size_t compressionSavings_ = 0;
+  ops::Int4KvCache* int4Cache_ = nullptr;
 };
 
 } // namespace splash::engine
