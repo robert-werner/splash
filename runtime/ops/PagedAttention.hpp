@@ -20,6 +20,7 @@ namespace splash::kv {
 using ChunkedPrefillParams = ::SplashChunkedPrefillParams;
 using VerifyAttentionParams = ::SplashVerifyAttentionParams;
 using PrefillAttentionParams = ::SplashPrefillAttentionParams;
+using ContinuousAttentionParams = ::SplashContinuousAttentionParams;
 
 static_assert(std::is_standard_layout_v<ChunkedPrefillParams>);
 static_assert(std::is_trivially_copyable_v<ChunkedPrefillParams>);
@@ -27,6 +28,8 @@ static_assert(std::is_standard_layout_v<VerifyAttentionParams>);
 static_assert(std::is_trivially_copyable_v<VerifyAttentionParams>);
 static_assert(std::is_standard_layout_v<PrefillAttentionParams>);
 static_assert(std::is_trivially_copyable_v<PrefillAttentionParams>);
+static_assert(std::is_standard_layout_v<ContinuousAttentionParams>);
+static_assert(std::is_trivially_copyable_v<ContinuousAttentionParams>);
 
 inline constexpr uint32_t kVerifyRows = SPLASH_TARGET_VERIFY_ROWS;
 inline constexpr uint32_t kVerifyMaximumSplits =
@@ -62,6 +65,16 @@ inline constexpr uint32_t kChunkedPrefillMaximumRows =
     SPLASH_PREFILL_TOKEN_BUDGET;
 inline constexpr uint32_t kPrefillAttentionTileRows =
     SPLASH_PREFILL_ATTENTION_TILE_ROWS;
+
+// Continuous attention tile sizes (from Metal kernel)
+inline constexpr uint32_t kContinuousAttentionTileRows = 32;
+inline constexpr uint32_t kContinuousAttentionTileCols = 64;
+inline constexpr uint32_t kContinuousAttentionThreshold = 1024;  // Use continuous for prompts > 1024 tokens
+
+[[nodiscard]] constexpr uint32_t
+continuousAttentionTiles(uint32_t tokens) noexcept {
+  return (tokens + kContinuousAttentionTileRows - 1) / kContinuousAttentionTileRows;
+}
 
 [[nodiscard]] constexpr uint32_t
 prefillAttentionTiles(uint32_t rows) noexcept {
@@ -125,6 +138,23 @@ private:
         splitGroups(splitGroups), reduceGroups(reduceGroups) {}
 };
 
+// Continuous attention: single-pass prefill without intermediate KV writes
+struct ContinuousPrefillPlan final {
+  const kv::Layout layout;
+  const uint32_t queryHeads;
+  const uint32_t tokens;
+  const std::string_view pipeline;
+  const metal::DispatchSize groups;
+
+private:
+  friend class PagedAttention;
+  ContinuousPrefillPlan(uint32_t tokens, std::string_view pipeline,
+                        metal::DispatchSize groups, kv::Layout layout,
+                        uint32_t queryHeads)
+      : layout(layout), queryHeads(queryHeads), tokens(tokens),
+        pipeline(pipeline), groups(groups) {}
+};
+
 struct VerifyAttentionPlan final {
   const kv::Layout layout;
   const uint32_t queryHeads;
@@ -178,6 +208,11 @@ public:
   // plan depends on the rows only.
   [[nodiscard]] static PrefillAttentionPlan
   prefillPlan(uint32_t rows, uint32_t queryHeads, kv::Layout layout);
+
+  // Continuous attention plan: single-pass prefill for long prompts
+  [[nodiscard]] static ContinuousPrefillPlan
+  continuousPrefillPlan(uint32_t tokens, uint32_t queryHeads, kv::Layout layout);
+
   // historyTokens holds each lane's committed tokens before its verify rows,
   // one entry per lane.
   [[nodiscard]] static VerifyAttentionPlan
@@ -252,6 +287,18 @@ public:
                          metal::MetalBuffer pageTable,
                          const kv::ChunkedPrefillParams &chunk,
                          const PrefillAttentionPlan &plan);
+
+  // Continuous attention: single-pass prefill without intermediate KV writes
+  // Queries and output are [KV head][token][query head in group][dimension].
+  // No workspace needed - all computation is in-register and threadgroup memory.
+  static void addContinuousPrefill(metal::CommandGraph &graph,
+                                   SplashKvLayer layer,
+                                   metal::MetalBuffer queries,
+                                   metal::MetalBuffer output,
+                                   metal::MetalBuffer pageTable,
+                                   const kv::ContinuousAttentionParams &params,
+                                   const ContinuousPrefillPlan &plan);
+
   // Stores each lane's chunk (verifyParams, one per plan lane) and attends
   // its verify rows with the plan's split counts.
   static void addVerify(metal::CommandGraph &graph, SplashKvLayer layer,

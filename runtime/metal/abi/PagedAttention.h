@@ -73,3 +73,19 @@ struct SplashVerifyAttentionParams {
 
 static_assert(sizeof(SplashVerifyAttentionParams) == 24,
               "Verify attention parameters are 24 bytes on both sides");
+
+// Continuous attention processes the full prompt in one pass without
+// intermediate KV cache writes. This is more efficient for long prompts
+// (>1K tokens) as it eliminates memory bandwidth overhead.
+struct SplashContinuousAttentionParams {
+  uint32_t tokens;            // Total tokens in prompt
+  uint32_t committed_tokens;  // Previously committed tokens (for causal mask)
+  uint32_t chunk_stride;      // Output stride (same as query stride)
+  uint32_t page_table_entries; // Pages allocated for final KV write
+  SplashKvLayer kv;           // KV extent info
+  uint32_t tile_rows;         // Query tile size (Br)
+  uint32_t tile_cols;         // KV tile size (Bc)
+};
+
+static_assert(sizeof(SplashContinuousAttentionParams) == 32,
+              "Continuous attention parameters are 32 bytes on both sides");

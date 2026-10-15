@@ -13,16 +13,17 @@ namespace splash::kv {
 
 // Selected once for a runtime and its entire page pool. Weight storage is
 // independent of the KV format; requests never change it while serving.
-enum class Format : uint32_t { Int8 = 1, BFloat16 = 2 };
+enum class Format : uint32_t { Int8 = 1, BFloat16 = 2, Int4 = 3 };
 
 [[nodiscard]] constexpr bool validFormat(Format format) noexcept {
-  return format == Format::Int8 || format == Format::BFloat16;
+  return format == Format::Int8 || format == Format::BFloat16 || format == Format::Int4;
 }
 
 [[nodiscard]] constexpr std::string_view formatName(Format format) noexcept {
   switch (format) {
   case Format::Int8: return "int8";
   case Format::BFloat16: return "bf16";
+  case Format::Int4: return "int4";
   }
   return "invalid";
 }
@@ -33,6 +34,8 @@ enum class Format : uint32_t { Int8 = 1, BFloat16 = 2 };
     return "q8s8_f32_scale_per_token_head_k_token_major_v_dimension_major";
   case Format::BFloat16:
     return "bf16_k_token_major_v_dimension_major";
+  case Format::Int4:
+    return "q4s4_f32_scale_per_token_head_k_token_major_v_dimension_major";
   }
   return "invalid";
 }
