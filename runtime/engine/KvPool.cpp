@@ -1,4 +1,5 @@
 #include "engine/KvPool.hpp"
+#include "engine/KvDefragmentation.hpp"
 #include "AwakeClock.hpp"
 
 #include <algorithm>
@@ -417,6 +418,72 @@ void KvPool::setExtentReclaimable(uint32_t extentIndex,
   if (!reclaimableExtents_.count)
     std::terminate();
   --reclaimableExtents_.count;
+}
+
+uint32_t KvPool::currentFragmentationRatio() const noexcept {
+  if (allocatedExtents_ == 0)
+    return 0;
+  
+  const uint32_t totalPages = allocatedExtents_ * extentPages_;
+  const uint32_t usedPages = activePages_ + prefixPages_;
+  
+  if (totalPages <= usedPages)
+    return 0;
+  
+  return ((totalPages - usedPages) * 100) / totalPages;
+}
+
+void KvPool::defragmentIfNeeded(const DefragmentationPolicy &policy,
+                                 DefragmentationResult &result) {
+  const auto start = AwakeClock::now();
+  
+  result = {};
+  result.fragmentationBefore = currentFragmentationRatio();
+  
+  // Don't defragment if fragmentation is below trigger threshold
+  if (result.fragmentationBefore < policy.triggerFragmentationRatio) {
+    return;
+  }
+  
+  // Don't defragment if we don't have enough free pages
+  if (freePages_ < policy.minFreePagesForDefrag) {
+    return;
+  }
+  
+  // Compact extents until fragmentation target is met or limits reached
+  uint32_t compacted = 0;
+  uint32_t fragmentation = result.fragmentationBefore;
+  
+  while (fragmentation > policy.targetFragmentationRatio && 
+         compacted < policy.maxExtentsPerPass) {
+    
+    // Check time limit
+    const double elapsed = millisecondsSince(start);
+    if (elapsed >= policy.maxDefragTimeMs) {
+      break;
+    }
+    
+    // Try to compact one extent
+    KvPageMoves moves = compactExtent({});
+    if (moves.empty()) {
+      // No more extents can be compacted
+      break;
+    }
+    
+    compacted++;
+    result.pagesMoved += static_cast<uint32_t>(moves.destinations.size());
+    
+    // Recalculate fragmentation
+    fragmentation = currentFragmentationRatio();
+  }
+  
+  result.extentsCompacted = compacted;
+  result.fragmentationAfter = fragmentation;
+  result.elapsedMs = millisecondsSince(start);
+  
+  // Release empty extents that resulted from defragmentation
+  const uint64_t freedBytes = reclaimEmptyExtents(false, compacted);
+  result.bytesFreed = freedBytes;
 }
 
 } // namespace splash::engine

@@ -111,11 +111,19 @@ public:
   // Empties the allocated extent that holds the fewest pages, by moving each
   // of them to a free page of the other extents that hold pages, fullest
   // first: free pages scattered over the pool become an empty extent, which
-  // a reclaim releases. References move with their pages, and the result
+  // References move with their pages, and the result
   // says where each went, for the caller to re-point whoever names them.
   // Nothing moves, and the result is empty, unless those free pages cover
   // the extent. An extent that holds a page of `fixed` is not emptied.
   [[nodiscard]] KvPageMoves compactExtent(std::span<const uint32_t> fixed);
+  
+  // Proactively defragment KV pool under memory pressure to reduce waste.
+  // Compacts extents until fragmentation falls below target or time limit.
+  // Returns statistics about the defragmentation pass.
+  [[nodiscard]] uint32_t currentFragmentationRatio() const noexcept;
+  void defragmentIfNeeded(const struct DefragmentationPolicy &policy,
+                          struct DefragmentationResult &result);
+  
   [[nodiscard]] KvPoolSnapshot snapshot() const;
 
 private:
