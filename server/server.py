@@ -1683,16 +1683,6 @@ def _native_command(args, relaunch_context=None):
         command.extend(("--decode-share", str(args.decode_share)))
     if args.max_batch_size != 4:
         command.extend(("--max-batch-size", str(args.max_batch_size)))
-    if args.dynamic_batching:
-        command.extend(("--dynamic-batching", "on"))
-    if args.int4_kv_cache:
-        command.extend(("--int4-kv-cache", "on"))
-    if args.vision_text_only:
-        command.extend(("--vision-text-only", "on"))
-    if args.kernel_fusion:
-        command.extend(("--kernel-fusion", "on"))
-    if args.speculative_decoding:
-        command.extend(("--speculative-decoding", "on"))
     if args.continuous_attention_threshold != 4096:
         command.extend(("--continuous-attention-threshold", str(args.continuous_attention_threshold)))
     if args.max_image_pixels != image_input.MAX_PIXELS:
