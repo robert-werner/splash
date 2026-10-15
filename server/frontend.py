@@ -857,6 +857,15 @@ class Frontend:
                 body.get("messages"), vision=self.vision, deadline=deadline
             )
         )
+
+        # Early context length check: estimate token count from message content
+        # before expensive rendering/tokenization. This allows clients like
+        # Hermes to compact their history in response to this error rather than
+        # discovering the overflow after full prompt preparation.
+        estimated_tokens = self._estimate_message_tokens(messages)
+        if estimated_tokens > self.max_context * 0.9:  # 90% threshold with headroom
+            raise ContextLengthError(estimated_tokens, self.max_context - 1)
+
         tools, tool_policy = normalize_tools(
             body.get("tools"),
             body.get("tool_choice"),
@@ -878,6 +887,58 @@ class Frontend:
             template_kwargs,
             body.get("reasoning_effort"),
         )
+
+    def _estimate_message_tokens(self, messages):
+        """Fast, conservative estimate of token count from messages without
+        full template rendering. Uses character-to-token ratio heuristic
+        (1 token ≈ 3.5 characters for typical text) plus overhead for:
+        - Chat template markup (~50 tokens)
+        - Tool calls and reasoning (~20 tokens per call)
+        - System messages and role markers (~10 tokens per message)
+
+        This provides early detection of oversized contexts, allowing clients
+        to compact before expensive rendering."""
+        total_chars = 0
+        tool_call_count = 0
+
+        for message in messages:
+            # Count content characters
+            content = message.get("content", "")
+            if isinstance(content, str):
+                total_chars += len(content)
+            elif isinstance(content, list):
+                for part in content:
+                    if isinstance(part, dict) and part.get("type") == "text":
+                        total_chars += len(part.get("text", ""))
+
+            # Count reasoning content
+            reasoning = message.get("reasoning_content", "")
+            if reasoning:
+                total_chars += len(reasoning)
+
+            # Count tool calls
+            tool_calls = message.get("tool_calls", [])
+            tool_call_count += len(tool_calls)
+            for call in tool_calls:
+                if isinstance(call, dict):
+                    func = call.get("function", {})
+                    total_chars += len(func.get("name", ""))
+                    args = func.get("arguments", "")
+                    if isinstance(args, str):
+                        total_chars += len(args)
+
+            # Role overhead (role markers in template)
+            total_chars += 20  # Role marker overhead per message
+
+        # Convert chars to tokens (conservative ratio)
+        estimated_tokens = total_chars // 3  # ~3 chars per token average
+
+        # Add template overhead
+        estimated_tokens += 100  # Chat template markup
+        estimated_tokens += tool_call_count * 30  # Tool call structure overhead
+        estimated_tokens += len(messages) * 5  # Message separator overhead
+
+        return estimated_tokens
 
     def _tokenize(self, text, **options):
         with self.latencies.measure("tokenization"):

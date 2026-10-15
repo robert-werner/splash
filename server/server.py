@@ -1681,6 +1681,12 @@ def _native_command(args, relaunch_context=None):
         command.extend(("--ane", "off"))
     if args.decode_share is not None:
         command.extend(("--decode-share", str(args.decode_share)))
+    if args.max_batch_size != 4:
+        command.extend(("--max-batch-size", str(args.max_batch_size)))
+    if args.dynamic_batching:
+        command.extend(("--dynamic-batching", "on"))
+    if args.continuous_attention_threshold != 4096:
+        command.extend(("--continuous-attention-threshold", str(args.continuous_attention_threshold)))
     if args.max_image_pixels != image_input.MAX_PIXELS:
         command.extend(
             ("--max-image-patches", str(image_input.max_patches(args.max_image_pixels)))

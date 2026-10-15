@@ -224,6 +224,16 @@ def parse_decode_share(value):
     return share
 
 
+def parse_max_batch_size(value):
+    try:
+        size = int(value)
+    except ValueError:
+        size = 0
+    if size <= 0 or size > 16:
+        raise argparse.ArgumentTypeError("must be a positive integer between 1 and 16")
+    return size
+
+
 def parse_max_image_pixels(value):
     try:
         pixels = int(value)
@@ -411,9 +421,9 @@ SERVE_OPTIONS = (
         "--kv-format",
         "memory",
         dict(
-            choices=("int8", "bf16"),
+            choices=("int8", "bf16", "int4"),
             default="int8",
-            help="target KV cache storage (default: int8); bf16 uses more memory",
+            help="target KV cache storage (default: int8); bf16 uses more memory, int4 uses less (experimental)",
         ),
     ),
     ServeOption(
@@ -618,6 +628,38 @@ SERVE_OPTIONS = (
             default=False,
             help="let the Mac sleep automatically while requests run (default: it "
             "stays awake until they finish; the display may still sleep)",
+        ),
+    ),
+    ServeOption(
+        "--max-batch-size",
+        "requests",
+        dict(
+            type=parse_max_batch_size,
+            default=4,
+            metavar="SIZE",
+            help="maximum number of concurrent requests to batch together "
+            "(default: 4; range: 1-16)",
+        ),
+    ),
+    ServeOption(
+        "--dynamic-batching",
+        "requests",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable dynamic batching to adjust batch size based on load "
+            "(default: false)",
+        ),
+    ),
+    ServeOption(
+        "--continuous-attention-threshold",
+        "memory",
+        dict(
+            type=parse_max_context,
+            default=4096,
+            metavar="TOKENS",
+            help="use continuous attention (fused prefill) for prompts above this "
+            "length (default: 4096 tokens; 0 disables continuous attention)",
         ),
     ),
 )
