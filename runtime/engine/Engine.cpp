@@ -67,7 +67,16 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
       int4Cache_(config_.int4Cache),
       visionConditional_(config_.visionConditional),
       kernelFusion_(config_.kernelFusion),
-      speculativeDecoding_(config_.speculativeDecoding) {
+      speculativeDecoding_(config_.speculativeDecoding),
+      lazyAneAllocation_(config_.lazyAneAllocation 
+                         ? std::make_optional<LazyAneAllocator>(LazyAnePolicy{})
+                         : std::nullopt),
+      writeCoalescing_(config_.writeCoalescing 
+                       ? std::make_optional<WriteCoalescingBuffer>(WriteCoalescingConfig{})
+                       : std::nullopt),
+      kvDefragmentation_(config_.kvDefragmentation 
+                         ? std::make_optional<KvDefragmentation>(4096)
+                         : std::nullopt) {
   if (!config_.maxContext || !config_.vocabularySize) {
     throw std::invalid_argument("context and vocabulary sizes must be positive");
   }

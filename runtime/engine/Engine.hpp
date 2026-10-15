@@ -709,6 +709,9 @@ private:
   std::optional<ops::VisionConditional> visionConditional_;
   std::optional<ops::KernelFusion> kernelFusion_;
   std::optional<ops::SpeculativeDecodingV2> speculativeDecoding_;
+  std::optional<LazyAneAllocator> lazyAneAllocation_;
+  std::optional<WriteCoalescingBuffer> writeCoalescing_;
+  std::optional<KvDefragmentation> kvDefragmentation_;
   MemoryTelemetry telemetry_;
   std::unordered_map<uint64_t, Request> requests_;
   // Pressure preempted work, a lane is still resident, and memory is still
