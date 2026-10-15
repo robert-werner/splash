@@ -79,6 +79,11 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
     throw std::invalid_argument("max batch size must be between 1 and 16");
   if (config_.continuousPrefillThreshold > config_.maxContext)
     throw std::invalid_argument("continuous prefill threshold cannot exceed max context");
+  
+  // Wire Int4Cache to KvPools
+  if (int4Cache_) {
+    // KvPools will be initialized later, wire in constructor extension or during first use
+  }
 }
 
 void Engine::submit(EngineRequest value) {

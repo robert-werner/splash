@@ -69,6 +69,14 @@ KvPageAcquisition KvPool::acquirePages(uint32_t count) {
     pages_[page].activeReferences = 1;
     ++activePages_;
   }
+  
+  // Track INT4 compression savings if enabled
+  if (int4Cache_ && selected.size() > 0) {
+    size_t originalSize = selected.size() * storage_.bytesPerPage();
+    size_t compressedSize = int4Cache_->getCompressedSize(originalSize / sizeof(float)) * sizeof(uint8_t);
+    compressionSavings_ += (originalSize - compressedSize);
+  }
+  
   return {std::move(selected)};
 }
 
