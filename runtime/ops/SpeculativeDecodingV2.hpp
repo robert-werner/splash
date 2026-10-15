@@ -14,10 +14,9 @@ class SpeculativeDecodingV2 {
 public:
   explicit SpeculativeDecodingV2(const SpeculativeDecodingV2Config& config);
   
-  uint32_t getMaxDraftTokens() const { return config_.maxDraftTokens; }
-  float getAcceptanceThreshold() const { return config_.acceptanceThreshold; }
-  
-  float getSpeedupFactor() const { return config_.enabled ? 1.75f : 1.0f; }
+  bool shouldAcceptDraft(float score) const;
+  uint32_t getMaxDraftTokens() const;
+  float getSpeedupFactor() const;
 
 private:
   SpeculativeDecodingV2Config config_;

@@ -14,10 +14,9 @@ class KernelFusion {
 public:
   explicit KernelFusion(const KernelFusionConfig& config);
   
-  bool shouldFuseRMSNormLinear() const { return config_.enabled && config_.fuseRMSNormLinear; }
-  bool shouldFuseRoPEAttention() const { return config_.enabled && config_.fuseRoPEAttention; }
-  
-  float getSpeedupFactor() const { return config_.enabled ? 1.15f : 1.0f; }
+  bool shouldFuseRMSNormLinear() const;
+  bool shouldFuseRoPEAttention() const;
+  float getSpeedupFactor() const;
 
 private:
   KernelFusionConfig config_;
