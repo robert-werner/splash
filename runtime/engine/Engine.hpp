@@ -91,7 +91,10 @@ struct EngineConfig final {
   // mark it replaced (MemoryGovernor::setServing).
   std::function<bool(bool)> serving;
   
-  // Phase 3 optimizations
+  // Phase 2 & Phase 3 optimizations
+  bool lazyAneAllocation = false;
+  bool writeCoalescing = false;
+  bool kvDefragmentation = false;
   std::optional<ops::Int4KvCacheConfig> int4Cache = std::nullopt;
   std::optional<ops::VisionConditionalConfig> visionConditional = std::nullopt;
   std::optional<ops::KernelFusionConfig> kernelFusion = std::nullopt;

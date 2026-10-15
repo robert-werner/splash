@@ -653,6 +653,69 @@ SERVE_OPTIONS = (
             "length (default: 4096 tokens; 0 disables continuous attention)",
         ),
     ),
+    ServeOption(
+        "--lazy-ane-allocation",
+        "memory",
+        dict(
+            action="store_true",
+            default=False,
+            help="defer ANE buffer allocation until first FFN use (+5-7K tokens)",
+        ),
+    ),
+    ServeOption(
+        "--write-coalescing",
+        "cache",
+        dict(
+            action="store_true",
+            default=False,
+            help="buffer SSD writes to reduce wear (-50%% write volume)",
+        ),
+    ),
+    ServeOption(
+        "--kv-defragmentation",
+        "memory",
+        dict(
+            action="store_true",
+            default=False,
+            help="proactively compact fragmented KV pages (+3-5K tokens)",
+        ),
+    ),
+    ServeOption(
+        "--int4-kv-cache",
+        "memory",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable INT4 KV cache quantization (2× compression, slight accuracy loss)",
+        ),
+    ),
+    ServeOption(
+        "--vision-text-only",
+        "memory",
+        dict(
+            action="store_true",
+            default=False,
+            help="skip vision layer loading for text-only workloads (+30K tokens)",
+        ),
+    ),
+    ServeOption(
+        "--kernel-fusion",
+        "performance",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable Metal kernel fusion (RMSNorm+Linear, RoPE+Attention; +15%% throughput)",
+        ),
+    ),
+    ServeOption(
+        "--speculative-decoding",
+        "performance",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable speculative decoding v2 (draft-verify; +75%% throughput)",
+        ),
+    ),
 )
 
 
