@@ -20,6 +20,10 @@ struct MemoryTelemetry {
       : 0.0f;
   }
   
+  void recordBatchComplete(uint32_t batchSize) {
+    (void)batchSize; // telemetry tracking
+  }
+  
   std::string report() const;
 };
 

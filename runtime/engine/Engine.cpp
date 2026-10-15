@@ -2001,6 +2001,9 @@ void Engine::apply(const BatchPlan &plan, std::span<const std::vector<Capture>> 
   scheduler_.complete(plan, schedulerResults, wallMilliseconds,
                       representativePrefillTiming);
   
+  // Phase 2: Memory telemetry - record batch completion
+  telemetry_.recordBatchComplete(static_cast<uint32_t>(plan.items.size()));
+  
   // Dynamic batching: observe decode performance to detect thermal throttling
   if (dynamicBatching_ && plan.kind == WorkKind::Decode && 
       std::isfinite(wallMilliseconds) && wallMilliseconds > 0.0) {
