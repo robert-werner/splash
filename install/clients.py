@@ -423,6 +423,11 @@ def _write_hermes_profile(home, server, environment, created=False):
         # custom endpoint for 65,536, which its compaction does not reserve.
         # Later versions ignore it and leave the limit to the server.
         max_tokens=server.response_tokens,
+        # Splash performs no server-side compaction; Hermes must compact before
+        # sending. Set a compact_threshold to trigger compaction more eagerly
+        # (at 65% of context window instead of default 75%), ensuring the
+        # conversation fits well before rendering overhead.
+        compact_threshold=0.65,
     )
     _replace_file(path, yaml.safe_dump(profile, sort_keys=False))
 
