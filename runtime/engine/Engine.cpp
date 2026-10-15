@@ -63,7 +63,11 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
       events_(events), scheduler_(config_.decodeShare, config_.maxBatchSize),
       dynamicBatching_(config_.dynamicBatching 
                        ? std::make_optional<DynamicBatching>(config_.maxBatchSize)
-                       : std::nullopt) {
+                       : std::nullopt),
+      int4Cache_(config_.int4Cache),
+      visionConditional_(config_.visionConditional),
+      kernelFusion_(config_.kernelFusion),
+      speculativeDecoding_(config_.speculativeDecoding) {
   if (!config_.maxContext || !config_.vocabularySize) {
     throw std::invalid_argument("context and vocabulary sizes must be positive");
   }
