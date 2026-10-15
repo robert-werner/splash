@@ -60,7 +60,10 @@ std::string resourceTimeoutMessage(metal::AllocationFailure failure) {
 Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
                EngineEventSink &events)
     : config_(config), cache_(cache), writeBehind_(cache), model_(model),
-      events_(events), scheduler_(config_.decodeShare) {
+      events_(events), scheduler_(config_.decodeShare, config_.maxBatchSize),
+      dynamicBatching_(config_.dynamicBatching 
+                       ? std::make_optional<DynamicBatching>(config_.maxBatchSize)
+                       : std::nullopt) {
   if (!config_.maxContext || !config_.vocabularySize) {
     throw std::invalid_argument("context and vocabulary sizes must be positive");
   }
@@ -68,6 +71,10 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
     throw std::invalid_argument("the engine needs the governor's growth pause and serving mark");
   if (!std::isfinite(config_.decodeShare) || config_.decodeShare < 0.0)
     throw std::invalid_argument("decode share must be nonnegative and finite");
+  if (config_.maxBatchSize < 1 || config_.maxBatchSize > 16)
+    throw std::invalid_argument("max batch size must be between 1 and 16");
+  if (config_.continuousPrefillThreshold > config_.maxContext)
+    throw std::invalid_argument("continuous prefill threshold cannot exceed max context");
 }
 
 void Engine::submit(EngineRequest value) {
@@ -1975,6 +1982,19 @@ void Engine::apply(const BatchPlan &plan, std::span<const std::vector<Capture>> 
   }
   scheduler_.complete(plan, schedulerResults, wallMilliseconds,
                       representativePrefillTiming);
+  
+  // Dynamic batching: observe decode performance to detect thermal throttling
+  if (dynamicBatching_ && plan.kind == WorkKind::Decode && 
+      std::isfinite(wallMilliseconds) && wallMilliseconds > 0.0) {
+    dynamicBatching_->observeDecodeBatch(
+        static_cast<uint32_t>(plan.items.size()),
+        wallMilliseconds
+    );
+    // Update scheduler with new batch size limit
+    uint32_t newMaxBatchSize = dynamicBatching_->currentMaxBatchSize();
+    scheduler_.setMaxBatchSize(newMaxBatchSize);
+  }
+  
   events_.batchCompleted(plan.kind, plan.width(), inputTokens, outputTokens,
                          draftedTokens, acceptedDraftTokens, wallMilliseconds,
                          cycleMilliseconds);

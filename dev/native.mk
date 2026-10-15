@@ -27,6 +27,7 @@ CACHE_SOURCES := \
 	runtime/engine/WriteBehind.cpp
 BACKEND_CONTROL_SOURCES := \
 	runtime/engine/Scheduler.cpp \
+	runtime/engine/DynamicBatching.cpp \
 	runtime/model/DraftContextPlan.cpp \
 	$(CACHE_SOURCES) \
 	runtime/engine/Engine.cpp

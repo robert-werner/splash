@@ -251,6 +251,7 @@ ENGINE_CPP_SOURCES := \
 	runtime/engine/MemoryPlan.cpp \
 	runtime/engine/AneFfnStartup.cpp \
 	runtime/engine/Scheduler.cpp \
+	runtime/engine/DynamicBatching.cpp \
 	runtime/engine/Cache.cpp \
 	runtime/engine/WriteBehind.cpp \
 	runtime/engine/Engine.cpp \

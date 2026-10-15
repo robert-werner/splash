@@ -43,6 +43,12 @@ struct NativeArguments final {
   kv::Format kvFormat = kv::Format::Int8;
   ops::GdnStateFormat stateFormat = ops::GdnStateFormat::Float32;
   double decodeShare = EngineConfig{}.decodeShare;
+  // --max-batch-size N: maximum concurrent decode lanes (1-16).
+  uint32_t maxBatchSize = EngineConfig{}.maxBatchSize;
+  // --dynamic-batching on|off: enable adaptive batch size adjustment.
+  bool dynamicBatching = EngineConfig{}.dynamicBatching;
+  // --continuous-attention-threshold N: token count for continuous prefill.
+  uint32_t continuousAttentionThreshold = EngineConfig{}.continuousPrefillThreshold;
   uint32_t maxImagePatches = ops::kMaximumImagePatches;
   // --idle-release SECONDS|off, infinite for off.
   double idleReleaseSeconds = RuntimeResourcesConfig{}.idleReleaseSeconds;

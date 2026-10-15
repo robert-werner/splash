@@ -78,6 +78,20 @@ double parseDecodeShare(std::string_view value) {
   return result;
 }
 
+uint32_t parseMaxBatchSize(std::string_view value) {
+  uint32_t result = 0;
+  if (!parsePositive(value, result) || result < 1 || result > 16)
+    throw UsageError("--max-batch-size requires an integer in [1, 16]");
+  return result;
+}
+
+uint32_t parseContinuousAttentionThreshold(std::string_view value) {
+  uint32_t result = 0;
+  if (!parsePositive(value, result))
+    throw UsageError("--continuous-attention-threshold requires a positive integer");
+  return result;
+}
+
 std::filesystem::path requireModelRoot(std::string_view argument) {
   std::error_code error;
   const std::filesystem::path root =
@@ -146,6 +160,14 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (value != "on" && value != "off")
         throw UsageError("--ane requires on or off");
       result.neuralEngine = value == "on";
+    } else if (option == "--max-batch-size") {
+      result.maxBatchSize = parseMaxBatchSize(value);
+    } else if (option == "--dynamic-batching") {
+      if (value != "on" && value != "off")
+        throw UsageError("--dynamic-batching requires on or off");
+      result.dynamicBatching = value == "on";
+    } else if (option == "--continuous-attention-threshold") {
+      result.continuousAttentionThreshold = parseContinuousAttentionThreshold(value);
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
     } else {
