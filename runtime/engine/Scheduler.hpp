@@ -63,7 +63,17 @@ class Scheduler final {
 public:
   // Decode time owed for each unit of time a prefill runs while requests of
   // equal or higher priority decode; zero alternates one command of each kind.
-  explicit Scheduler(double decodeShare) noexcept : decodeShare_(decodeShare) {}
+  // maxBatchSize limits concurrent decode lanes (1-16, default 4).
+  explicit Scheduler(double decodeShare, uint32_t maxBatchSize = 4) noexcept 
+      : decodeShare_(decodeShare), maxBatchSize_(maxBatchSize) {}
+  
+  // Update maximum batch size (for dynamic batching)
+  void setMaxBatchSize(uint32_t maxBatchSize) noexcept {
+    maxBatchSize_ = std::min(maxBatchSize, 
+                             static_cast<uint32_t>(model::ExecutionLimits::maximumBatchWidth));
+  }
+  
+  [[nodiscard]] uint32_t maxBatchSize() const noexcept { return maxBatchSize_; }
 
   void submit(RequestSpec request);
   void observePrefill(uint32_t rows, double wallMilliseconds);
@@ -155,6 +165,7 @@ private:
   uint64_t decodeDispatchOrder_ = 0;
   double prefillMillisecondsPerToken_ = 0.0;
   double decodeShare_;
+  uint32_t maxBatchSize_;
   // Decode time that prefill still owes the lanes that decoded beside it
   // (not those waiting for a mask): equal-priority decode runs until its
   // commands' wall time has worked it off.
