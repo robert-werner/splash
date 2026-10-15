@@ -311,6 +311,7 @@ GROUPS = (
     ("cache", "SSD cache"),
     ("api", "API"),
     ("requests", "requests"),
+    ("performance", "performance"),
 )
 
 
@@ -648,6 +649,86 @@ SERVE_OPTIONS = (
             action="store_true",
             default=False,
             help="enable dynamic batching to adjust batch size based on load "
+            "(default: false)",
+        ),
+    ),
+    ServeOption(
+        "--int4-kv-cache",
+        "memory",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable INT4 KV cache quantization for 2× memory compression "
+            "(default: false)",
+        ),
+    ),
+    ServeOption(
+        "--vision-text-only",
+        "memory",
+        dict(
+            action="store_true",
+            default=False,
+            help="skip vision layers for text-only workloads, saves ~30K tokens "
+            "(default: false)",
+        ),
+    ),
+    ServeOption(
+        "--kernel-fusion",
+        "performance",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable Metal kernel fusion for RMSNorm+Linear and RoPE+Attention "
+            "(default: false)",
+        ),
+    ),
+    ServeOption(
+        "--dynamic-batching",
+        "requests",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable dynamic batching to adjust batch size based on load "
+            "(default: false)",
+        ),
+    ),
+    ServeOption(
+        "--int4-kv-cache",
+        "memory",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable INT4 KV cache quantization for 2× memory compression "
+            "(default: false)",
+        ),
+    ),
+    ServeOption(
+        "--vision-text-only",
+        "memory",
+        dict(
+            action="store_true",
+            default=False,
+            help="skip vision layers for text-only workloads, saves ~30K tokens "
+            "(default: false)",
+        ),
+    ),
+    ServeOption(
+        "--kernel-fusion",
+        "performance",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable Metal kernel fusion for RMSNorm+Linear and RoPE+Attention "
+            "(default: false)",
+        ),
+    ),
+    ServeOption(
+        "--speculative-decoding",
+        "performance",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable speculative decoding v2 with draft token acceptance "
             "(default: false)",
         ),
     ),
