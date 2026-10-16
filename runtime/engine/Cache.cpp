@@ -1,4 +1,5 @@
 #include "engine/Cache.hpp"
+#include "engine/Engine.hpp"
 #include "engine/WriteCoalescing.hpp"
 
 #include "AwakeClock.hpp"
@@ -30,10 +31,14 @@ bool older(const std::optional<CacheEvictionCandidate> &left,
 
 } // namespace
 
-Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget)
+Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget,
+             const EngineConfig &config)
     : pool_(pool), tier_(kvTier), persistent_(kvTier && kvTier->persistent()),
       diskBudget_(std::move(diskBudget)), kv_(pool, recency_),
-      states_(kv_, recency_, [this](bool inUse) { return freeDiskSpace(inUse); }, persistent_) {}
+      states_(kv_, recency_, [this](bool inUse) { return freeDiskSpace(inUse); }, persistent_),
+      writeCoalescing_(config.writeCoalescing
+                           ? std::make_unique<WriteCoalescingBuffer>(WriteCoalescingConfig{})
+                           : nullptr) {}
 
 CacheAdoption Cache::adopt(std::vector<PersistedKv> blocks, std::vector<PersistedState> states) {
   if (!persistent_)
@@ -847,6 +852,20 @@ Cache::LeafReclaim Cache::demoteKv(uint64_t block) {
   if (!transfer) {
     ++kvTier_.demotionsRefused;
     return transfersInFlight() ? LeafReclaim::Pending : LeafReclaim::Impossible;
+  }
+  // WriteCoalescing: hand the label and the slot to the buffer, which
+  // flushes the batch on its own policy instead of one write per block.
+  if (writeCoalescing_ && persistent_) {
+    const bool buffered = writeCoalescing_->addWrite(
+        block, 0, std::vector<std::byte>{},
+        [this, block, slot]() mutable {
+          labelKv(block, slot);
+          kv_.setSlot(block, std::move(slot));
+          kv_.setTransferring(block, true);
+        });
+    if (buffered) {
+      return LeafReclaim::Started;
+    }
   }
   labelKv(block, slot);
   kv_.setSlot(block, std::move(slot));
