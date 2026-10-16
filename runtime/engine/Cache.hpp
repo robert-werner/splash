@@ -4,6 +4,7 @@
 #include "engine/KvPool.hpp"
 #include "engine/KvTier.hpp"
 #include "engine/StateCache.hpp"
+#include "engine/WriteCoalescing.hpp"
 #include "model/Model.hpp"
 #include "model/SlotFile.hpp"
 
@@ -707,6 +708,7 @@ private:
   double extentCompactMaxMilliseconds_ = 0.0;
   std::function<void()> completionNotifier_;
   std::optional<KvDefragmentation> kvDefragmentation_;
+  std::unique_ptr<WriteCoalescingBuffer> writeCoalescing_;
 };
 
 } // namespace splash::engine

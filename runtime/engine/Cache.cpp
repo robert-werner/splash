@@ -35,7 +35,8 @@ Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> di
     : pool_(pool), tier_(kvTier), persistent_(kvTier && kvTier->persistent()),
       diskBudget_(std::move(diskBudget)), kv_(pool, recency_),
       states_(kv_, recency_, [this](bool inUse) { return freeDiskSpace(inUse); }, persistent_),
-      kvDefragmentation_(config.kvDefragmentation ? std::make_optional<KvDefragmentation>(4096) : std::nullopt) {
+      kvDefragmentation_(config.kvDefragmentation ? std::make_optional<KvDefragmentation>(4096) : std::nullopt),
+      writeCoalescing_(config.writeCoalescing ? std::make_unique<WriteCoalescingBuffer>(WriteCoalescingConfig{}) : nullptr) {
   if (kvDefragmentation_) pool_.setKvDefragmentation(&(*kvDefragmentation_));
 }
 
@@ -852,6 +853,22 @@ Cache::LeafReclaim Cache::demoteKv(uint64_t block) {
     ++kvTier_.demotionsRefused;
     return transfersInFlight() ? LeafReclaim::Pending : LeafReclaim::Impossible;
   }
+  
+  // WriteCoalescing hot path: buffer write metadata (actual I/O via tier_->demote)
+  if (writeCoalescing_ && persistent_) {
+    std::vector<std::byte> dummyData;
+    bool buffered = writeCoalescing_->addWrite(
+        block, 0, std::move(dummyData),
+        [this, block, slot]() mutable {
+          labelKv(block, slot);
+          kv_.setSlot(block, std::move(slot));
+          kv_.setTransferring(block, true);
+        });
+    if (buffered) {
+      return LeafReclaim::Started;
+    }
+  }
+  
   labelKv(block, slot);
   kv_.setSlot(block, std::move(slot));
   kv_.setTransferring(block, true);
