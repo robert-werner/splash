@@ -8,6 +8,10 @@
 #include <span>
 #include <vector>
 
+namespace splash::engine {
+class KvDefragmentation;
+}
+
 namespace splash::ops {
 class Int4KvCache;
 }
@@ -107,6 +111,8 @@ public:
   [[nodiscard]] uint32_t reusablePages() const noexcept {
     return allocatedExtents_ * extentPages_ - activePages_;
   }
+  
+  void setKvDefragmentation(engine::KvDefragmentation* defrag) { kvDefragmentation_ = defrag; }
 
   // Releases completely unreferenced extents, at most `limit` of them, and
   // returns the bytes released. keepRunway keeps one empty extent warm, so
@@ -205,6 +211,7 @@ private:
   
   size_t compressionSavings_ = 0;
   ops::Int4KvCache* int4Cache_ = nullptr;
+  engine::KvDefragmentation* kvDefragmentation_ = nullptr;
 };
 
 } // namespace splash::engine
