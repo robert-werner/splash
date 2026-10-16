@@ -14,7 +14,9 @@ namespace splash::test {
 
 // An engine config completed as the bootstrap completes one, for tests: what
 // the test set, and otherwise the whole logical context, every 32-bit token
-// in the vocabulary and a host that never pauses growth.
+// in the vocabulary and a host that never pauses growth. A maxContext below
+// the default continuous-prefill threshold lowers it, which the engine
+// otherwise refuses.
 [[nodiscard]] inline engine::EngineConfig engineConfig(engine::EngineConfig config = {}) {
   if (!config.maxContext)
     config.maxContext = kv::kMaximumLogicalTokens;
@@ -24,6 +26,8 @@ namespace splash::test {
     config.growthPaused = [] { return false; };
   if (!config.serving)
     config.serving = [](bool) { return false; };
+  if (config.continuousPrefillThreshold > config.maxContext)
+    config.continuousPrefillThreshold = config.maxContext;
   return config;
 }
 

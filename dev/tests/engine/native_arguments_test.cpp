@@ -213,9 +213,9 @@ void testRefusals() {
             "the engine read a command line it must refuse");
   };
   refuses({"auto", "auto", "--kv-format", "fp16"},
-          "--kv-format requires int8 or bf16");
+          "--kv-format requires int8, bf16, or int4");
   // An option's missing value fails its check.
-  refuses({"auto", "auto", "--kv-format"}, "--kv-format requires int8 or bf16");
+  refuses({"auto", "auto", "--kv-format"}, "--kv-format requires int8, bf16, or int4");
   refuses({"auto", "auto", "--state-format", "fp16"},
           "--state-format requires fp32 or bf16");
   refuses({"auto", "auto", "--state-format"}, "--state-format requires fp32 or bf16");

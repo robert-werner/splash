@@ -24,13 +24,19 @@ CACHE_SOURCES := \
 	runtime/engine/KvCache.cpp \
 	runtime/engine/StateCache.cpp \
 	runtime/engine/Cache.cpp \
-	runtime/engine/WriteBehind.cpp
+	runtime/engine/WriteBehind.cpp \
+	runtime/engine/WriteCoalescing.cpp \
+	runtime/engine/KvDefragmentation.cpp
 BACKEND_CONTROL_SOURCES := \
 	runtime/engine/Scheduler.cpp \
 	runtime/engine/DynamicBatching.cpp \
 	runtime/engine/LazyAneAllocation.cpp \
 	runtime/engine/WriteCoalescing.cpp \
 	runtime/engine/KvDefragmentation.cpp \
+	runtime/ops/Int4KvCache.cpp \
+	runtime/ops/KernelFusion.cpp \
+	runtime/ops/VisionConditional.cpp \
+	runtime/ops/SpeculativeDecodingV2.cpp \
 	runtime/model/DraftContextPlan.cpp \
 	$(CACHE_SOURCES) \
 	runtime/engine/Engine.cpp
@@ -93,6 +99,9 @@ TEST_NATIVE_ARGUMENTS_TEST := $(ENGINE_TEST_BUILD)/native-arguments
 TEST_RESOURCES_TEST := $(ENGINE_TEST_BUILD)/runtime-resources
 TEST_KV_PAGE_TIER_TEST := $(ENGINE_TEST_BUILD)/kv-page-tier
 TEST_METRICS_TEST := $(ENGINE_TEST_BUILD)/runtime-metrics
+TEST_KV_DEFRAGMENTATION_TEST := $(ENGINE_TEST_BUILD)/kv-defragmentation
+TEST_LAZY_ANE_ALLOCATION_TEST := $(ENGINE_TEST_BUILD)/lazy-ane-allocation
+TEST_WRITE_COALESCING_TEST := $(ENGINE_TEST_BUILD)/write-coalescing
 TEST_MODEL_LOADING_TEST := $(ENGINE_TEST_BUILD)/model-loading
 TEST_MEMORY_AUDIT_TEST := $(ENGINE_TEST_BUILD)/memory-audit
 TEST_MEMORY_GOVERNOR_TEST := $(ENGINE_TEST_BUILD)/memory-governor
@@ -171,6 +180,9 @@ TEST_CPU_TARGETS := $(TEST_SLOT_FILE) $(TEST_CACHE_DIRECTORY) $(TEST_DISK_SPACE)
 	$(TEST_BOOTSTRAP_TEST) \
 	$(TEST_NATIVE_ARGUMENTS_TEST) \
 	$(TEST_METRICS_TEST) \
+	$(TEST_KV_DEFRAGMENTATION_TEST) \
+	$(TEST_LAZY_ANE_ALLOCATION_TEST) \
+	$(TEST_WRITE_COALESCING_TEST) \
 	$(TEST_MEMORY_AUDIT_TEST) \
 	$(TEST_MEMORY_GOVERNOR_TEST) \
 	$(TEST_STATUS_TEST) \
@@ -264,6 +276,12 @@ $(TEST_NATIVE_LOOP_TEST): $(NATIVE_RUNTIME_SOURCES) \
 		dev/tests/engine/ProtocolPeer.cpp \
 		dev/tests/engine/native_engine_loop_test.cpp
 $(TEST_METRICS_TEST): dev/tests/engine/runtime_metrics_test.cpp
+$(TEST_KV_DEFRAGMENTATION_TEST): runtime/engine/KvDefragmentation.cpp \
+		dev/tests/engine/kv_defragmentation_test.cpp
+$(TEST_LAZY_ANE_ALLOCATION_TEST): runtime/engine/LazyAneAllocation.cpp \
+		dev/tests/engine/lazy_ane_allocation_test.cpp
+$(TEST_WRITE_COALESCING_TEST): runtime/engine/WriteCoalescing.cpp \
+		dev/tests/engine/write_coalescing_test.cpp
 $(TEST_MEMORY_AUDIT_TEST): runtime/metal/DeviceCapabilities.cpp \
 		runtime/engine/MemoryPlan.cpp runtime/engine/MemoryAudit.cpp \
 		dev/tests/engine/memory_audit_test.cpp
@@ -282,6 +300,8 @@ $(TEST_LEGACY_WEIGHT_CACHE): dev/tests/engine/legacy_weight_cache_test.cpp
 $(TEST_WEIGHT_SOURCE) $(TEST_GGUF_FILE) $(TEST_MEMORY_TEST) $(TEST_KV_PAGE_CACHE_TEST) \
 		$(TEST_DRAFT_CONTEXT_PLAN_TEST) $(TEST_RAGGED_SCHEDULER_TEST) \
 		$(TEST_ELASTIC_KV_TEST) $(TEST_NATIVE_LOOP_TEST) $(TEST_METRICS_TEST) \
+		$(TEST_KV_DEFRAGMENTATION_TEST) $(TEST_LAZY_ANE_ALLOCATION_TEST) \
+		$(TEST_WRITE_COALESCING_TEST) \
 		$(TEST_MEMORY_AUDIT_TEST) $(TEST_MEMORY_GOVERNOR_TEST) $(TEST_STATUS_TEST) \
 		$(TEST_Q8_CPU_TEST) $(TEST_SLOT_FILE) $(TEST_CACHE_DIRECTORY) $(TEST_DISK_SPACE) \
 		$(TEST_LEGACY_WEIGHT_CACHE) $(TEST_PERSISTENT_CACHE) $(TEST_ENGINE_CACHE_TEST) $(TEST_PROTOCOL_TEST) \
@@ -493,6 +513,9 @@ test-engine-cpu: $(TEST_CPU_TARGETS) $(TEST_ATTENTION_SWEEP)
 	$(TEST_BOOTSTRAP_TEST)
 	$(TEST_NATIVE_ARGUMENTS_TEST) dev/tests/engine/native_command_golden.txt $(MODEL_CONFIGS)
 	$(TEST_METRICS_TEST)
+	$(TEST_KV_DEFRAGMENTATION_TEST)
+	$(TEST_LAZY_ANE_ALLOCATION_TEST)
+	$(TEST_WRITE_COALESCING_TEST)
 	$(TEST_MEMORY_AUDIT_TEST)
 	$(TEST_MEMORY_GOVERNOR_TEST)
 	$(TEST_STATUS_TEST) dev/tests/engine/status_golden.json

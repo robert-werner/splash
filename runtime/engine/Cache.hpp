@@ -247,6 +247,7 @@ public:
   // makes the cache persistent: its copies are labelled for the next
   // process, and the quota keeps whole restore points by the recency of
   // their states (dropOldestPoint).
+  Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget);
   Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget, const EngineConfig &config);
   Cache(const Cache &) = delete;
   Cache &operator=(const Cache &) = delete;

@@ -31,6 +31,9 @@ bool older(const std::optional<CacheEvictionCandidate> &left,
 
 } // namespace
 
+Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget)
+    : Cache(pool, kvTier, std::move(diskBudget), EngineConfig{}) {}
+
 Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget, const EngineConfig &config)
     : pool_(pool), tier_(kvTier), persistent_(kvTier && kvTier->persistent()),
       diskBudget_(std::move(diskBudget)), kv_(pool, recency_),
