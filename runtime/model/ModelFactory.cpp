@@ -33,10 +33,9 @@ std::unique_ptr<VisionLoader> planVisionLoader(const std::filesystem::path &root
 }
 
 QwenVisionWeights loadVisionWeights(metal::MetalBackend &backend, WeightImages &images,
-                                    const VisionLoader *loader) {
-  // Phase 3: VisionConditional - skip vision weights if text-only mode
-  // (Vision conditional check would happen at higher level via EngineConfig)
-  return loader ? loadQwenVisionWeights(backend, images, *loader) : QwenVisionWeights{};
+                                    const VisionLoader *loader, bool skipVision) {
+  if (skipVision || !loader) return QwenVisionWeights{};
+  return loadQwenVisionWeights(backend, images, *loader);
 }
 
 namespace {
