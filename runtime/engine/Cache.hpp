@@ -19,6 +19,9 @@
 
 namespace splash::engine {
 
+struct EngineConfig;
+class KvDefragmentation;
+
 // What a prompt's KV blocks are cached under beside its tokens: the images
 // its rows depend on and its request's cache salt (blockIdentity).
 struct PromptIdentity final {
@@ -243,7 +246,7 @@ public:
   // makes the cache persistent: its copies are labelled for the next
   // process, and the quota keeps whole restore points by the recency of
   // their states (dropOldestPoint).
-  Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget);
+  Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget, const EngineConfig &config);
   Cache(const Cache &) = delete;
   Cache &operator=(const Cache &) = delete;
 
@@ -703,6 +706,7 @@ private:
   CacheLookupSnapshot lookup_;
   double extentCompactMaxMilliseconds_ = 0.0;
   std::function<void()> completionNotifier_;
+  std::optional<KvDefragmentation> kvDefragmentation_;
 };
 
 } // namespace splash::engine

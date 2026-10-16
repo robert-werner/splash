@@ -34,7 +34,10 @@ public:
   explicit KvDefragmentation(size_t totalPages);
   
   [[nodiscard]] float getFragmentation() const;
-  [[nodiscard]] bool needsCompaction(float threshold) const;
+  [[nodiscard]] bool needsCompaction(uint32_t threshold) const noexcept;
+  [[nodiscard]] bool shouldDefragment(float fragmentationPercentage) const noexcept {
+    return fragmentationPercentage >= 40.0f;
+  }
   
   void markUsed(size_t pageId, size_t blockSize);
   void markFree(size_t pageId);

@@ -185,6 +185,16 @@ void KvPool::releaseExtent(uint32_t extent) {
 }
 
 KvPageMoves KvPool::compactExtent(std::span<const uint32_t> fixed) {
+  if (kvDefragmentation_) {
+    for (uint32_t extent = 0; extent < extents_.size(); ++extent) {
+      if (!extents_[extent].allocated) continue;
+      uint32_t usedPages = extents_[extent].usedPages;
+      if (usedPages > 0 && usedPages < extentPages_) {
+        float fragRatio = static_cast<float>(extentPages_ - usedPages) / extentPages_ * 100.0f;
+        if (kvDefragmentation_->shouldDefragment(fragRatio)) break;
+      }
+    }
+  }
   // Pages move only into extents that hold pages already: an empty extent is
   // released as it is, never filled to release another.
   uint32_t freeInUse = 0;
