@@ -457,6 +457,7 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
   try {
     const auto started = AwakeClock::now();
     loaded = model::loadModel(*backend, config.modelRoot, config.model, config.visionTextOnly);
+    loaded.visionSkipped = config.visionTextOnly && loaded.descriptor.hasVision();
     requireLoadedModel(loaded);
     const std::chrono::duration<double> loading = AwakeClock::now() - started;
     logLine("Weights loaded in ", std::fixed, std::setprecision(2),

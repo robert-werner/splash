@@ -279,6 +279,10 @@ AneFfnSetting AneFfnSetting::fromGiven(std::optional<double> share, std::optiona
 AneFfnStart startAneFfn(const AneFfnModel &model, const AneFfnSetting &setting, RequestedContext requested,
                         const std::function<EngineMemoryPlanResult(uint64_t aneFfnBytes)> &planMemory,
                         const std::function<bool()> &cancelled) {
+  // LazyAneAllocation: skip ANE if lazy policy says defer
+  if (setting.lazyAllocation && requested.tokens == 0) {
+    return {{}, {}, {Kind::Off, "lazy allocation deferred ANE until first tokens", 0, 0}};
+  }
   AneFfnStart start = decide(model, setting, requested, planMemory, cancelled);
   logOutcome(start.outcome, model, setting, requested);
   return start;
