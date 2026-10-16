@@ -573,8 +573,12 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
         requestedContextTokens ? RequestedContext{.tokens = requestedContextTokens}
                                : RequestedContext{.tokens = config.relaunchContext,
                                                   .relaunch = config.relaunchContext != 0};
+    // Phase 2: LazyAneAllocation - pass flag to AneFfnSetting
+    AneFfnSetting aneFfnSetting = config.aneFfn;
+    aneFfnSetting.lazyAllocation = config.lazyAneAllocation;
+    
     AneFfnStart aneFfn =
-        startAneFfn(splitModel, config.aneFfn, splitContext, planMemory, config.cancelled);
+        startAneFfn(splitModel, aneFfnSetting, splitContext, planMemory, config.cancelled);
     if (aneFfn.plan)
       memoryPlan = std::move(*aneFfn.plan);
     const EngineMemoryBreakdown &budget = memoryPlan.breakdown();
