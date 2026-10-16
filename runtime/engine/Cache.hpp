@@ -21,6 +21,7 @@ namespace splash::engine {
 
 struct EngineConfig;
 class KvDefragmentation;
+class WriteCoalescingBuffer;
 
 // What a prompt's KV blocks are cached under beside its tokens: the images
 // its rows depend on and its request's cache salt (blockIdentity).
@@ -707,6 +708,7 @@ private:
   double extentCompactMaxMilliseconds_ = 0.0;
   std::function<void()> completionNotifier_;
   std::optional<KvDefragmentation> kvDefragmentation_;
+  std::unique_ptr<WriteCoalescingBuffer> writeCoalescing_;
 };
 
 } // namespace splash::engine

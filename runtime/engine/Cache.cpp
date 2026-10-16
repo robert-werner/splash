@@ -1,6 +1,7 @@
 #include "engine/Cache.hpp"
 #include "engine/Engine.hpp"
 #include "engine/KvDefragmentation.hpp"
+#include "engine/WriteCoalescing.hpp"
 
 #include "AwakeClock.hpp"
 #include "engine/DiskLabels.hpp"
@@ -35,7 +36,8 @@ Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> di
     : pool_(pool), tier_(kvTier), persistent_(kvTier && kvTier->persistent()),
       diskBudget_(std::move(diskBudget)), kv_(pool, recency_),
       states_(kv_, recency_, [this](bool inUse) { return freeDiskSpace(inUse); }, persistent_),
-      kvDefragmentation_(config.kvDefragmentation ? std::make_optional<KvDefragmentation>(4096) : std::nullopt) {
+      kvDefragmentation_(config.kvDefragmentation ? std::make_optional<KvDefragmentation>(4096) : std::nullopt),
+      writeCoalescing_(config.writeCoalescing ? std::make_unique<WriteCoalescingBuffer>(WriteCoalescingConfig{}) : nullptr) {
   if (kvDefragmentation_) {
     pool_.setKvDefragmentation(&(*kvDefragmentation_));
   }
@@ -849,6 +851,19 @@ Cache::LeafReclaim Cache::demoteKv(uint64_t block) {
   // goes like any leaf nothing needs.
   if (!kvNeededByState(block))
     return LeafReclaim::Impossible;
+  
+  // Phase 2: WriteCoalescing hot path
+  if (writeCoalescing_ && tier_ && persistent_) {
+    if (writeCoalescing_->shouldFlush(0.0)) {
+      auto writer = [](std::vector<PendingWrite>& writes) {
+        for (auto& w : writes) {
+          if (w.completion) w.completion();
+        }
+      };
+      writeCoalescing_->forceFlush(writer);
+    }
+  }
+  
   auto transfer = tier_->demote(kv_.page(block), slot, completionNotifier_);
   if (!transfer) {
     ++kvTier_.demotionsRefused;
