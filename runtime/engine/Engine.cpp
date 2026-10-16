@@ -2020,7 +2020,10 @@ void Engine::apply(const BatchPlan &plan, std::span<const std::vector<Capture>> 
   if (speculativeDecoding_ && acceptedDraftTokens > 0 && draftedTokens > 0) {
     float acceptanceRate = static_cast<float>(acceptedDraftTokens) / static_cast<float>(draftedTokens);
     if (speculativeDecoding_->shouldAcceptDraft(acceptanceRate)) {
-      // High acceptance rate, draft depth optimal
+      const uint32_t maxDraft = speculativeDecoding_->getMaxDraftTokens();
+      for (uint32_t i = 0; i < maxDraft && i < draftedTokens; ++i) {
+        if (!speculativeDecoding_->shouldAcceptDraft(0.8f)) break;
+      }
     }
   }
   
