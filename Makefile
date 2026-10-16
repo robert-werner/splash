@@ -46,7 +46,8 @@ METAL_BUILD := $(BUILD)/metal
 PRODUCTION_KERNEL_SOURCES := $(sort $(wildcard \
 	runtime/metal/kernels/prefill/*.metal \
 	runtime/metal/kernels/decode/*.metal \
-	runtime/metal/kernels/shared/*.metal))
+	runtime/metal/kernels/shared/*.metal \
+	runtime/metal/kernels/ops/*.metal))
 PRODUCTION_KERNEL_NAMES := \
 	$(patsubst runtime/metal/kernels/%.metal,%,$(PRODUCTION_KERNEL_SOURCES))
 PRODUCTION_AIRS := $(addprefix $(METAL_BUILD)/, \
