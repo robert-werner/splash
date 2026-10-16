@@ -35,6 +35,9 @@ struct LoadedModel final {
   TargetWeights target;
   DFlashDraftWeights draft;
   QwenVisionWeights vision;
+  // The vision tower was skipped on request (--vision-text-only): `vision`
+  // stays empty and its bytes go to the KV budget instead.
+  bool visionSkipped = false;
   std::string manifestFingerprintSha256;
 
   [[nodiscard]] const std::string &name() const noexcept {
@@ -87,8 +90,10 @@ struct RuntimeContext final {
 // architectures. Each architecture validates its own tensor and state layout.
 void requireCompatibleModel(const LoadedModel &model);
 
-// The bytes of every image the model's weights load into.
-[[nodiscard]] uint64_t modelWeightBytes(const std::filesystem::path &root, const ModelDescriptor &descriptor);
+// The bytes of every image the model's weights load into; with `textOnly`
+// the vision tower's, which is not loaded then.
+[[nodiscard]] uint64_t modelWeightBytes(const std::filesystem::path &root, const ModelDescriptor &descriptor,
+                                        bool textOnly = false);
 
 // The vision role's source, planned; null for a model without vision.
 [[nodiscard]] std::unique_ptr<VisionLoader> planVisionLoader(const std::filesystem::path &root,
@@ -103,7 +108,8 @@ void requireCompatibleModel(const LoadedModel &model);
 [[nodiscard]] LoadedModel
 loadModel(metal::MetalBackend &backend,
                  const std::filesystem::path &root,
-                 const ModelDescriptor &descriptor);
+                 const ModelDescriptor &descriptor,
+                 bool textOnly = false);
 
 // The FFN layers of a dense target, which the prefill FFN's Neural Engine
 // split (ops::AneFfn) may take; none for another target.

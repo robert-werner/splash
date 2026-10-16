@@ -33,10 +33,11 @@ std::unique_ptr<VisionLoader> planVisionLoader(const std::filesystem::path &root
 }
 
 QwenVisionWeights loadVisionWeights(metal::MetalBackend &backend, WeightImages &images,
-                                    const VisionLoader *loader) {
-  // Phase 3: VisionConditional - skip vision weights if text-only mode
-  // (Vision conditional check would happen at higher level via EngineConfig)
-  return loader ? loadQwenVisionWeights(backend, images, *loader) : QwenVisionWeights{};
+                                    const VisionLoader *loader, bool textOnly) {
+  // Phase 3: VisionConditional - the text-only mode loads no vision tower,
+  // so its bytes go to the KV budget instead of the fixed runtime.
+  if (textOnly || !loader) return QwenVisionWeights{};
+  return loadQwenVisionWeights(backend, images, *loader);
 }
 
 namespace {
@@ -61,7 +62,8 @@ uint64_t imageBytes(const std::vector<gguf::Image> &images) {
 
 LoadedModel loadModel(metal::MetalBackend &backend,
                               const std::filesystem::path &root,
-                              const ModelDescriptor &descriptor) {
+                              const ModelDescriptor &descriptor,
+                              bool textOnly) {
   LoadedModel result;
   result.descriptor = descriptor;
   if (!result.descriptor.valid())
@@ -89,7 +91,8 @@ LoadedModel loadModel(metal::MetalBackend &backend,
       },
       result.descriptor.target);
   result.draft = loadDFlashDraftWeights(backend, draft, result.descriptor.draft);
-  result.vision = loadVisionWeights(backend, images, vision.get());
+  result.vision = loadVisionWeights(backend, images, vision.get(), textOnly);
+  result.visionSkipped = textOnly && result.descriptor.hasVision();
 
   std::vector<WeightFileRecord> records(result.targetFiles().begin(),
                                         result.targetFiles().end());
@@ -102,7 +105,8 @@ LoadedModel loadModel(metal::MetalBackend &backend,
   return result;
 }
 
-uint64_t modelWeightBytes(const std::filesystem::path &root, const ModelDescriptor &descriptor) {
+uint64_t modelWeightBytes(const std::filesystem::path &root, const ModelDescriptor &descriptor,
+                          bool textOnly) {
   uint64_t bytes = 0;
   if (descriptor.targetSource == TargetSource::Gguf) {
     WeightSource source(findTargetGguf(root / "target"));
@@ -115,7 +119,7 @@ uint64_t modelWeightBytes(const std::filesystem::path &root, const ModelDescript
                        descriptor.target);
   }
   bytes += draftImageBytes(root / "draft", descriptor.draft);
-  if (descriptor.hasVision())
+  if (descriptor.hasVision() && !textOnly)
     bytes += visionImageBytes(descriptor.vision);
   return bytes;
 }

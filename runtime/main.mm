@@ -210,6 +210,14 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.idleReleaseSeconds = arguments.idleReleaseSeconds;
   config.resources.aneFfn.enabled = arguments.neuralEngine;
   config.resources.relaunchContext = arguments.relaunchContext;
+  // Phase 2 & Phase 3 optimization switches, as the parser read them.
+  config.resources.lazyAneAllocation = arguments.lazyAneAllocation;
+  config.resources.writeCoalescing = arguments.writeCoalescing;
+  config.resources.kvDefragmentation = arguments.kvDefragmentation;
+  config.resources.int4KvCache = arguments.int4KvCache;
+  config.resources.visionTextOnly = arguments.visionTextOnly;
+  config.resources.kernelFusion = arguments.kernelFusion;
+  config.resources.speculativeDecoding = arguments.speculativeDecoding;
   config.nativeLoop.engine.maxContext = arguments.maxContext;
   config.nativeLoop.engine.decodeShare = arguments.decodeShare;
   return config;
