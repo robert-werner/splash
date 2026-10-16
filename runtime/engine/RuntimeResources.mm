@@ -220,7 +220,8 @@ std::array<uint8_t, 32> parseSha256(std::string_view value) {
 void requireLoadedModel(const model::LoadedModel &loaded) {
   if (!loaded.targetActualAllocatedBytes() ||
       !loaded.draft.actualAllocatedBytes ||
-      (loaded.descriptor.hasVision() && !loaded.vision.actualAllocatedBytes) ||
+      (loaded.descriptor.hasVision() && !loaded.visionSkipped &&
+       !loaded.vision.actualAllocatedBytes) ||
       loaded.manifestFingerprintSha256.empty() ||
       loaded.targetManifestFingerprint().empty()) {
     throw std::invalid_argument(
@@ -412,7 +413,8 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
     // the arenas.
     kv::Layout kvLayout = config.model.targetKvLayout;
     kvLayout.format = config.kvFormat;
-    const uint64_t weightBytes = model::modelWeightBytes(config.modelRoot, config.model);
+    const uint64_t weightBytes = model::modelWeightBytes(config.modelRoot, config.model,
+                                                         config.visionTextOnly);
     const auto requiredFor = [&](uint64_t stagingBytes) {
       uint64_t fixedBytes = 0;
       for (const uint64_t bytes : {weightBytes, model::kPipelineReserveBytes,
@@ -454,7 +456,7 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
   model::LoadedModel loaded;
   try {
     const auto started = AwakeClock::now();
-    loaded = model::loadModel(*backend, config.modelRoot, config.model);
+    loaded = model::loadModel(*backend, config.modelRoot, config.model, config.visionTextOnly);
     requireLoadedModel(loaded);
     const std::chrono::duration<double> loading = AwakeClock::now() - started;
     logLine("Weights loaded in ", std::fixed, std::setprecision(2),

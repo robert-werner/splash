@@ -298,8 +298,9 @@ std::unique_ptr<RuntimeBootstrap> RuntimeBootstrap::start(
   // Images are admitted up to the server's pixel cap; a model without vision
   // admits none.
   config.nativeLoop.engine.maxImagePatches =
-      config.resources.model.hasVision() ? config.resources.maximumImagePatches
-                                         : 0;
+      (config.resources.model.hasVision() && !config.resources.visionTextOnly)
+          ? config.resources.maximumImagePatches
+          : 0;
 
   std::unique_ptr<model::RuntimeModel> modelRuntime;
   try {
