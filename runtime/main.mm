@@ -209,6 +209,9 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.maximumImagePatches = arguments.maxImagePatches;
   config.resources.idleReleaseSeconds = arguments.idleReleaseSeconds;
   config.resources.aneFfn.enabled = arguments.neuralEngine;
+  // LazyAneAllocation reaches startAneFfn() through AneFfnSetting: this is the
+  // struct RuntimeResources hands it, so setting it anywhere else is inert.
+  config.resources.aneFfn.lazyAllocation = arguments.lazyAneAllocation;
   config.resources.relaunchContext = arguments.relaunchContext;
   // Phase 2 & Phase 3 optimization switches, as the parser read them.
   config.resources.lazyAneAllocation = arguments.lazyAneAllocation;
