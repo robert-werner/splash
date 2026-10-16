@@ -101,7 +101,7 @@ void requireCompatibleModel(const LoadedModel &model);
 // The vision role written by `loader`; empty weights for a model without
 // vision (no loader).
 [[nodiscard]] QwenVisionWeights loadVisionWeights(metal::MetalBackend &backend, WeightImages &images,
-                                                  const VisionLoader *loader);
+                                    const VisionLoader *loader, bool skipVision = false);
 
 // Production loading is selected by the validated descriptor. There
 // is one shared engine and DFlash controller; only model execution differs.
