@@ -1,5 +1,6 @@
 #include "engine/Cache.hpp"
-#include "engine/WriteCoalescing.hpp"
+#include "engine/Engine.hpp"
+#include "engine/KvDefragmentation.hpp"
 
 #include "AwakeClock.hpp"
 #include "engine/DiskLabels.hpp"
@@ -30,10 +31,13 @@ bool older(const std::optional<CacheEvictionCandidate> &left,
 
 } // namespace
 
-Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget)
+Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> diskBudget, const EngineConfig &config)
     : pool_(pool), tier_(kvTier), persistent_(kvTier && kvTier->persistent()),
       diskBudget_(std::move(diskBudget)), kv_(pool, recency_),
-      states_(kv_, recency_, [this](bool inUse) { return freeDiskSpace(inUse); }, persistent_) {}
+      states_(kv_, recency_, [this](bool inUse) { return freeDiskSpace(inUse); }, persistent_),
+      kvDefragmentation_(config.kvDefragmentation ? std::make_optional<KvDefragmentation>(4096) : std::nullopt) {
+  if (kvDefragmentation_) pool_.setKvDefragmentation(&(*kvDefragmentation_));
+}
 
 CacheAdoption Cache::adopt(std::vector<PersistedKv> blocks, std::vector<PersistedState> states) {
   if (!persistent_)

@@ -701,7 +701,7 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
                                std::filesystem::temp_directory_path().string(),
                      kvFile ? slotBytes : 0, stateBytes);
     }
-    auto cache = std::make_unique<engine::Cache>(*kvPool, kvTier.get(), diskBudget);
+    auto cache = std::make_unique<engine::Cache>(*kvPool, kvTier.get(), diskBudget, config.engine);
     if (diskSpace)
       cache->setDiskMeasure([space = diskSpace.get()] { space->measure(); });
 

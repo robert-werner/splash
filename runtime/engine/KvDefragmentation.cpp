@@ -18,7 +18,7 @@ float KvDefragmentation::getFragmentation() const {
   return 1.0f - (static_cast<float>(largestFreeBlock_) / freePages);
 }
 
-bool KvDefragmentation::needsCompaction(float threshold) const {
+bool KvDefragmentation::needsCompaction(uint32_t threshold) const noexcept {
   return getFragmentation() > threshold;
 }
 

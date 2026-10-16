@@ -154,6 +154,8 @@ struct RuntimeResourcesConfig {
   bool visionTextOnly = false;
   bool kernelFusion = false;
   bool speculativeDecoding = false;
+  
+  EngineConfig engine;
 };
 
 enum class RuntimeResourceFailure {
