@@ -108,6 +108,14 @@ struct NativeArguments final {
   bool persistentAneCalibration = true;
   // --speculation-threshold N: draft acceptance threshold for adaptive depth (0.15-0.30, default 0.25).
   float speculationThreshold = 0.25f;
+  
+  // Phase 3: Async KV page swap
+  // --kv-swap-enable: enable async background KV page swap to SSD with compression (default: off).
+  bool kvSwapEnable = false;
+  // --kv-swap-ssd-path PATH: swap directory path (default: ~/.cache/splash/kv_swap).
+  std::filesystem::path kvSwapSsdPath;
+  // --kv-swap-threshold N: RAM usage threshold to trigger swap (0.0-1.0, default 0.90).
+  double kvSwapThreshold = 0.90;
 };
 
 // Reads `serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto
