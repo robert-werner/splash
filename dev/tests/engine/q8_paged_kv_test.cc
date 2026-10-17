@@ -83,6 +83,40 @@ void testLayouts() {
           "the last value element is not the layer page's last");
 }
 
+// INT4 halves INT8's data bytes and keeps its per-(token, head) scales, so a
+// page holds twice the tokens of INT8 for the same bytes. Nothing dispatches
+// the format yet (--kv-format int4 is refused); this pins the geometry the
+// kernels will be written against, and it is what doubles the context.
+void testInt4Geometry() {
+  // The model this engine serves: 16 layers, 4 KV heads, 256-wide heads.
+  constexpr Layout int8{16, 4, 256, Format::Int8};
+  constexpr Layout int4{16, 4, 256, Format::Int4};
+  static_assert(int4.valid());
+  static_assert(int4.elementsPerLayerPage() == int8.elementsPerLayerPage(),
+                "INT4 holds the same elements per layer page as INT8");
+  static_assert(int4.dataBytesPerLayerPage() ==
+                    int8.dataBytesPerLayerPage() / 2,
+                "INT4 does not halve INT8's data bytes");
+  static_assert(int4.elementsPerScale() == int8.elementsPerScale() &&
+                    int4.scaleBytesPerLayerPage() ==
+                        int8.scaleBytesPerLayerPage(),
+                "INT4 does not share INT8's scale geometry");
+
+  // 33,280 bytes per token at INT8 against 16,896 at INT4: the scales stay
+  // whole while the data halves, so the KV capacity a budget buys grows by
+  // 1.97x - which is the whole point of the format.
+  static_assert(int8.bytesPerModelPage() / kPageTokens == 33'280);
+  static_assert(int4.bytesPerModelPage() / kPageTokens == 16'896);
+  // A 8.13 GiB KV pool holds 262,144 tokens at INT8 and over 480,000 at INT4,
+  // past this model's own maximum.
+  static_assert(int4.bytesPerModelPage() < int8.bytesPerModelPage());
+  // Extents still align every tensor region, now bounded by the scales
+  // rather than by the halved data.
+  static_assert(int4.extentAlignmentPages() != 0);
+  static_assert(int4.minimumExtentPages() % int4.extentAlignmentPages() == 0);
+  static_assert(int4.maximumExtentPages() % int4.extentAlignmentPages() == 0);
+}
+
 void testBFloat16() {
   for (float value : {0.0f, -0.0f, 1.0f, -3.5f, 1.0e-20f, 65504.0f}) {
     float roundTrip = bfloat16ToFloat(floatToBFloat16(value));
@@ -173,6 +207,7 @@ int main() {
   try {
     testByteAccounting();
     testLayouts();
+    testInt4Geometry();
     testBFloat16();
     testQuantization(kPageTokens);
     testQuantization(17);

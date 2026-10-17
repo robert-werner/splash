@@ -130,18 +130,30 @@ struct Layout final {
   [[nodiscard]] constexpr bool valid() const noexcept {
     return attentionLayers && kvHeads && headDimension && validFormat(format);
   }
+  // INT4 shares INT8's per-(token, head) scale layout; only the data halves.
   [[nodiscard]] constexpr uint32_t elementsPerScale() const noexcept {
-    return format == Format::Int8 ? headDimension : 0;
+    return format == Format::BFloat16 ? 0 : headDimension;
   }
   [[nodiscard]] constexpr uint64_t elementsPerLayerPage() const noexcept {
     return uint64_t{kPageTokens} * kvHeads * headDimension;
   }
   [[nodiscard]] constexpr uint64_t scalesPerTensorLayerPage() const noexcept {
-    return format == Format::Int8 ? uint64_t{kPageTokens} * kvHeads : 0;
+    return format == Format::BFloat16 ? 0
+                                      : uint64_t{kPageTokens} * kvHeads;
   }
   // Keys and values share one data and one scale geometry per layer page.
+  // INT4 packs two elements per byte (metal::int4b_format), so a page holds
+  // half the data bytes of INT8 and a quarter of BF16's.
   [[nodiscard]] constexpr uint64_t dataBytesPerLayerPage() const noexcept {
-    return elementsPerLayerPage() * (format == Format::Int8 ? 1 : 2);
+    switch (format) {
+    case Format::Int4:
+      return elementsPerLayerPage() / 2;
+    case Format::Int8:
+      return elementsPerLayerPage();
+    case Format::BFloat16:
+      break;
+    }
+    return elementsPerLayerPage() * 2;
   }
   [[nodiscard]] constexpr uint64_t scaleBytesPerLayerPage() const noexcept {
     return scalesPerTensorLayerPage() * sizeof(float);
