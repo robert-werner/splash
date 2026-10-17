@@ -4,6 +4,8 @@
 #include "StderrLine.hpp"
 #include "ane/Program.hpp"
 #include "engine/AneFfnPersistentCache.hpp"
+#include "engine/AneFfnPersistentCache.hpp"
+#include "engine/AneFfnPersistentCache.hpp"
 
 #include <algorithm>
 #include <chrono>

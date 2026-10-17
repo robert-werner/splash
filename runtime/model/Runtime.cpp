@@ -1914,6 +1914,7 @@ struct Runtime::Impl {
           invalidSelection({targetTokens, laneResult.retained}, lane);
       
       // Adaptive draft depth: adjust based on acceptance rate.
+      // Thresholds are configurable via speculationThreshold (default 0.25 targets 25-30% acceptance).
       Request &entry = *laneResult.request;
       const uint32_t proposals = laneResult.retained > 1 ? laneResult.retained - 1 : 0;
       entry.totalProposals += proposals;
@@ -1923,9 +1924,15 @@ struct Runtime::Impl {
         const float acceptanceRate = 
             static_cast<float>(entry.totalAccepted) / static_cast<float>(entry.totalProposals);
         
-        if (acceptanceRate < 0.15F && entry.draftDepth > 2)
+        // Use configurable thresholds: default 0.25 targets 25-30% acceptance
+        // Lower threshold (0.15) = more conservative, fewer false positives
+        // Higher threshold (0.30) = more aggressive, higher acceptance rate
+        const float lowerThreshold = entry.speculationThreshold * 0.6f;  // 0.15 with default 0.25
+        const float upperThreshold = entry.speculationThreshold * 1.2f;  // 0.30 with default 0.25
+        
+        if (acceptanceRate < lowerThreshold && entry.draftDepth > 2)
           entry.draftDepth = std::max(2u, entry.draftDepth - 1);
-        else if (acceptanceRate > 0.30F && entry.draftDepth < 8)
+        else if (acceptanceRate > upperThreshold && entry.draftDepth < 8)
           entry.draftDepth = std::min(8u, entry.draftDepth + 1);
         
         entry.totalProposals = 0;
