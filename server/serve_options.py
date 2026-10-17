@@ -435,9 +435,12 @@ SERVE_OPTIONS = (
         "--kv-format",
         "memory",
         dict(
-            choices=("int8", "bf16"),
+            choices=("int4", "int8", "bf16"),
             default="int8",
-            help="target KV cache storage (default: int8); bf16 uses more memory",
+            help=(
+                "target KV cache storage (default: int8); int4 nearly halves "
+                "the bytes a token costs, bf16 uses more memory"
+            ),
         ),
     ),
     ServeOption(

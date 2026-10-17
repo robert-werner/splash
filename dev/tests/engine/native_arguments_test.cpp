@@ -204,6 +204,23 @@ void testNeuralEngine() {
           "--ane did not reach the arguments as given");
 }
 
+// Every KV format the engine serves reaches the arguments as named. INT4
+// nearly halves what a token costs, so it is the one that buys context.
+void testKvFormats() {
+  const ModelDirectory model;
+  require(parse(model, {"auto", "auto"}).kvFormat == kv::Format::Int8,
+          "the default KV format is not int8");
+  require(parse(model, {"auto", "auto", "--kv-format", "int4"}).kvFormat ==
+              kv::Format::Int4,
+          "--kv-format int4 did not reach the arguments");
+  require(parse(model, {"auto", "auto", "--kv-format", "int8"}).kvFormat ==
+              kv::Format::Int8,
+          "--kv-format int8 did not reach the arguments");
+  require(parse(model, {"auto", "auto", "--kv-format", "bf16"}).kvFormat ==
+              kv::Format::BFloat16,
+          "--kv-format bf16 did not reach the arguments");
+}
+
 // A command line the server never writes is refused with what is wrong.
 void testRefusals() {
   const ModelDirectory model;
@@ -213,12 +230,9 @@ void testRefusals() {
             "the engine read a command line it must refuse");
   };
   refuses({"auto", "auto", "--kv-format", "fp16"},
-          "--kv-format requires int8 or bf16");
+          "--kv-format requires int4, int8 or bf16");
   // An option's missing value fails its check.
-  refuses({"auto", "auto", "--kv-format"}, "--kv-format requires int8 or bf16");
-  // Int4 is refused by name: its geometry is not implemented.
-  refuses({"auto", "auto", "--kv-format", "int4"},
-          "--kv-format int4 is not implemented yet");
+  refuses({"auto", "auto", "--kv-format"}, "--kv-format requires int4, int8 or bf16");
   refuses({"auto", "auto", "--state-format", "fp16"},
           "--state-format requires fp32 or bf16");
   refuses({"auto", "auto", "--state-format"}, "--state-format requires fp32 or bf16");
@@ -306,6 +320,7 @@ int main(int argc, char **argv) {
   try {
     testServerCommandLines(argv[1]);
     testNeuralEngine();
+    testKvFormats();
     testRefusals();
     std::cout << "native arguments tests passed\n";
     return EXIT_SUCCESS;

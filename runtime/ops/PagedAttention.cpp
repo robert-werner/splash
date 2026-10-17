@@ -47,6 +47,59 @@ std::string_view pipeline(KernelLayout layout, std::string_view kv4Group6,
   return layout == KernelLayout::Kv4Group6 ? kv4Group6 : kv2Group8;
 }
 
+// The attention entry point for a KV format and kernel layout. INT4 and INT8
+// each have their own quantized kernels - they share a scale layout but not a
+// value layout, so neither stands in for the other - and BF16 its unquantized
+// ones. Every name is a literal: a plan holds a string_view, so a constructed
+// name would dangle the moment the plan was built.
+std::string_view prefillSplitPipeline(KernelLayout layout,
+                                      kv::Format format) noexcept {
+  switch (format) {
+  case kv::Format::Int4:
+    return pipeline(layout, "prefill_attention_q4_split",
+                    "prefill_attention_q4_split_kv2_g8");
+  case kv::Format::Int8:
+    return pipeline(layout, "prefill_attention_q8_split",
+                    "prefill_attention_q8_split_kv2_g8");
+  case kv::Format::BFloat16:
+    break;
+  }
+  return pipeline(layout, "prefill_attention_bf16_split",
+                  "prefill_attention_bf16_split_kv2_g8");
+}
+
+std::string_view verifySplitPipeline(KernelLayout layout,
+                                     kv::Format format) noexcept {
+  switch (format) {
+  case kv::Format::Int4:
+    return pipeline(layout, "verify_attention_q4_split",
+                    "verify_attention_q4_split_kv2_g8");
+  case kv::Format::Int8:
+    return pipeline(layout, "verify_attention_q8_split",
+                    "verify_attention_q8_split_kv2_g8");
+  case kv::Format::BFloat16:
+    break;
+  }
+  return pipeline(layout, "verify_attention_bf16_split",
+                  "verify_attention_bf16_split_kv2_g8");
+}
+
+std::string_view verifyStorePipeline(KernelLayout layout,
+                                     kv::Format format) noexcept {
+  switch (format) {
+  case kv::Format::Int4:
+    return pipeline(layout, "verify_attention_q4_store",
+                    "verify_attention_q4_store_kv2_g8");
+  case kv::Format::Int8:
+    return pipeline(layout, "verify_attention_q8_store",
+                    "verify_attention_q8_store_kv2_g8");
+  case kv::Format::BFloat16:
+    break;
+  }
+  return pipeline(layout, "verify_attention_bf16_store",
+                  "verify_attention_bf16_store_kv2_g8");
+}
+
 // One dispatch normalizes both the queries and the keys, so their norms must
 // share a stored type.
 std::string qkNormKernel(std::string_view name, const NormWeights &queryNorm,
@@ -133,11 +186,7 @@ PrefillAttentionPlan PagedAttention::prefillPlan(
   return {rows, splits,
           attentionWorkspace(uint64_t{tiles} * splits * layout.kvHeads * fusedRows,
                              layout.headDimension),
-          layout.format == kv::Format::BFloat16
-              ? pipeline(kernel, "prefill_attention_bf16_split",
-                         "prefill_attention_bf16_split_kv2_g8")
-              : pipeline(kernel, "prefill_attention_q8_split",
-                         "prefill_attention_q8_split_kv2_g8"),
+          prefillSplitPipeline(kernel, layout.format),
           pipeline(kernel, "prefill_attention_reduce",
                    "prefill_attention_reduce_kv2_g8"),
           {layout.kvHeads, tiles, splits}, {layout.kvHeads, fusedRows, tiles}, layout, queryHeads};
@@ -182,21 +231,13 @@ VerifyAttentionPlan PagedAttention::verifyPlan(
   }
   return {lanes, laneSplits, splits,
           verifyWorkspaceBound(lanes, queryHeads, layout),
-          layout.format == kv::Format::BFloat16
-              ? pipeline(kernel, "verify_attention_bf16_split",
-                         "verify_attention_bf16_split_kv2_g8")
-              : pipeline(kernel, "verify_attention_q8_split",
-                         "verify_attention_q8_split_kv2_g8"),
+          verifySplitPipeline(kernel, layout.format),
           pipeline(kernel, "verify_attention_reduce",
                    "verify_attention_reduce_kv2_g8"),
           {layout.kvHeads, splits, lanes},
           {layout.kvHeads,
            kv::kVerifyRows * (queryHeads / layout.kvHeads), lanes},
-          layout.format == kv::Format::BFloat16
-              ? pipeline(kernel, "verify_attention_bf16_store",
-                         "verify_attention_bf16_store_kv2_g8")
-              : pipeline(kernel, "verify_attention_q8_store",
-                         "verify_attention_q8_store_kv2_g8"),
+          verifyStorePipeline(kernel, layout.format),
           {uint64_t{lanes} * 2 * kv::kVerifyRows * layout.kvHeads, 1, 1},
           {layout.headDimension, 1, 1}, layout, queryHeads};
 }
