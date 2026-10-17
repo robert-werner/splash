@@ -3,7 +3,8 @@
 
 set -e
 
-MODEL_REPO="prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0"
+MODEL_REPO="prism-ml/Ternary-Bonsai-2-27B-gguf"
+MODEL_VARIANT="PQ2_0"
 PORT=8081
 WORK_DIR="/tmp/splash_test_model"
 

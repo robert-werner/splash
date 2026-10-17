@@ -3,24 +3,26 @@
 
 set -e
 
-MODEL_DIR="/Users/a1111/development/splash_of_mine/install/models/.resolved/147a396cdf6c78c1d3d033939353ab08fb4ae41a39e54d52d6d10d254b5aacb0"
+MODEL="prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0"
 PORT=8081
 
 echo "=== Testing SSD tier functionality ==="
-echo "Model: $MODEL_DIR"
+echo "Model: $MODEL"
 echo "Port: $PORT"
 echo ""
 
 # Start server with SSD tier enabled
-# serve-native MODEL_DIRECTORY MAX_CONTEXT MAX_MEMORY_BYTES MAX_CACHE_DISK_BYTES [options]
 echo "Starting server with SSD tier..."
-./build/splash serve-native \
-  "$MODEL_DIR" \
-  188409 \
-  20401094656 \
-  10737418240 \
+./splash serve \
+  --model "$MODEL" \
+  --port $PORT \
+  --max-memory 19G \
+  --max-context 188409 \
   --state-format bf16 \
-  --persistent-cache on &
+  --max-cache-disk 10G \
+  --persistent-cache \
+  --vision-text-only \
+  --offline &
 
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
