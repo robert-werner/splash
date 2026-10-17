@@ -208,24 +208,6 @@ PrefillAttentionPlan PagedAttention::prefillPlan(
           {layout.kvHeads, tiles, splits}, {layout.kvHeads, fusedRows, tiles}, layout, queryHeads};
 }
 
-ContinuousPrefillPlan PagedAttention::continuousPrefillPlan(
-    uint32_t tokens, uint32_t queryHeads, kv::Layout layout) {
-  const KernelLayout kernel = attentionKernelLayout(queryHeads, layout);
-  if (!tokens || tokens > kv::kMaximumPhysicalTokens)
-    throw std::invalid_argument("invalid continuous attention token count");
-
-  // Continuous attention processes all tokens in a single pass without
-  // intermediate KV writes. Dispatch one threadgroup per (KV head, tile).
-  const uint32_t tiles = kv::continuousAttentionTiles(tokens);
-
-  return {tokens,
-          layout.format == kv::Format::BFloat16
-              ? pipeline(kernel, "continuous_attention_bf16",
-                         "continuous_attention_bf16_kv2_g8")
-              : pipeline(kernel, "continuous_attention_q8",
-                         "continuous_attention_q8_kv2_g8"),
-          {layout.kvHeads, tiles, 1}, layout, queryHeads};
-}
 
 VerifyAttentionPlan PagedAttention::verifyPlan(
     uint32_t lanes, uint32_t queryHeads, kv::Layout layout,
@@ -498,33 +480,5 @@ void PagedAttention::addVerify(metal::CommandGraph &graph, SplashKvLayer layer,
             attention, plan.reduceGroups);
 }
 
-void PagedAttention::addContinuousPrefill(
-    metal::CommandGraph &graph, SplashKvLayer /* layer */,
-    metal::MetalBuffer queries, metal::MetalBuffer output,
-    metal::MetalBuffer pageTable,
-    const kv::ContinuousAttentionParams &params,
-    const ContinuousPrefillPlan &plan) {
-  if (params.tokens != plan.tokens)
-    throw std::invalid_argument("continuous attention token count mismatch");
-
-  // Continuous attention works on full tiles only; the kernel handles partial tiles
-  const uint32_t tiles = kv::continuousAttentionTiles(params.tokens);
-  const Staging staging{plan.layout.kvHeads, params.chunk_stride, tiles * kv::kContinuousAttentionTileRows};
-
-  const uint64_t rows = staging.rowBytes(plan.queryHeads / plan.layout.kvHeads, plan.layout.headDimension);
-  requireBytes(queries, rows, "continuous attention query");
-  requireBytes(output, rows, "continuous attention output");
-
-  // Page table must cover all visible tokens
-  const uint64_t visibleTokens = uint64_t{params.committed_tokens} + params.tokens;
-  const uint64_t requiredPages = (visibleTokens + kv::kPageTokens - 1) / kv::kPageTokens;
-  requireBytes(pageTable, requiredPages * sizeof(SplashKvPage), "continuous attention page table");
-
-  // Dispatch: one threadgroup per (KV head, tile)
-  // No workspace needed - computation is purely register + threadgroup memory
-  graph.add(std::string(plan.pipeline),
-            {std::move(queries), std::move(output), std::move(pageTable)},
-            params, plan.groups);
-}
 
 } // namespace splash::ops

@@ -18,8 +18,7 @@ public:
 
   [[nodiscard]] PrefillAttentionPlan prefillAttention(
       uint32_t rows, uint32_t queryHeads, kv::Layout layout) const;
-  [[nodiscard]] ContinuousPrefillPlan continuousPrefillAttention(
-      uint32_t tokens, uint32_t queryHeads, kv::Layout layout) const;
+
   [[nodiscard]] VerifyAttentionPlan verifyAttention(
       uint32_t lanes, uint32_t queryHeads, kv::Layout layout,
       std::span<const uint32_t> historyTokens) const;

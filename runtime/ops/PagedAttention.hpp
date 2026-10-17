@@ -138,22 +138,10 @@ private:
         splitGroups(splitGroups), reduceGroups(reduceGroups) {}
 };
 
-// Continuous attention: single-pass prefill without intermediate KV writes
-struct ContinuousPrefillPlan final {
-  const kv::Layout layout;
-  const uint32_t queryHeads;
-  const uint32_t tokens;
-  const std::string_view pipeline;
-  const metal::DispatchSize groups;
+// Continuous attention: single-pass prefill without intermediate KV writes — REMOVED
+// This plan, addContinuousPrefill, and continuous_attention_* pipelines were never
+// called, and the kernels do not exist. The working path is chunked PrefillAttentionPlan.
 
-private:
-  friend class PagedAttention;
-  ContinuousPrefillPlan(uint32_t tokens, std::string_view pipeline,
-                        metal::DispatchSize groups, kv::Layout layout,
-                        uint32_t queryHeads)
-      : layout(layout), queryHeads(queryHeads), tokens(tokens),
-        pipeline(pipeline), groups(groups) {}
-};
 
 struct VerifyAttentionPlan final {
   const kv::Layout layout;
@@ -208,10 +196,6 @@ public:
   // plan depends on the rows only.
   [[nodiscard]] static PrefillAttentionPlan
   prefillPlan(uint32_t rows, uint32_t queryHeads, kv::Layout layout);
-
-  // Continuous attention plan: single-pass prefill for long prompts
-  [[nodiscard]] static ContinuousPrefillPlan
-  continuousPrefillPlan(uint32_t tokens, uint32_t queryHeads, kv::Layout layout);
 
   // historyTokens holds each lane's committed tokens before its verify rows,
   // one entry per lane.
@@ -287,17 +271,6 @@ public:
                          metal::MetalBuffer pageTable,
                          const kv::ChunkedPrefillParams &chunk,
                          const PrefillAttentionPlan &plan);
-
-  // Continuous attention: single-pass prefill without intermediate KV writes
-  // Queries and output are [KV head][token][query head in group][dimension].
-  // No workspace needed - all computation is in-register and threadgroup memory.
-  static void addContinuousPrefill(metal::CommandGraph &graph,
-                                   SplashKvLayer layer,
-                                   metal::MetalBuffer queries,
-                                   metal::MetalBuffer output,
-                                   metal::MetalBuffer pageTable,
-                                   const kv::ContinuousAttentionParams &params,
-                                   const ContinuousPrefillPlan &plan);
 
   // Stores each lane's chunk (verifyParams, one per plan lane) and attends
   // its verify rows with the plan's split counts.

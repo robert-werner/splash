@@ -191,8 +191,7 @@ The K=16 padding…». Это переделка тайлов ядра, а не 
 перечисляет допустимые типы источника:
 
 ```
-uint8_t / int8_t / uint2b_format / int2b_format / uint4b_format /
-int4b_format / float / half / bfloat / fp8_e4m3 / fp8_e5m2 / fp4_e2m1
+uint8_t / int8_t / uint4b_format / int4b_format / float / half / bfloat / fp8 / fp4
 ```
 
 `int4b_format` там есть. Тензор `tensor<device int4b_format, ...>` над

@@ -177,7 +177,7 @@ struct QwenTarget::PrefillStep {
   uint32_t rows;
   std::span<const SplashKvLayer> kvLayers;
   // Each sequence's attention plan, which every attention layer runs.
-  std::vector<std::variant<ops::PrefillAttentionPlan, ops::ContinuousPrefillPlan>> attention{};
+  std::vector<ops::PrefillAttentionPlan> attention{};
   std::optional<ops::MoePlan> moe{};
   ops::AneFfn *aneFfn = nullptr;
   uint32_t gdnLayer = 0;
@@ -320,29 +320,10 @@ metal::MetalBuffer QwenTarget::addPrefillMixer(PrefillStep &step, const QwenAtte
         sequence.rows, sequence.attentionStride, geometry_.attentionQueryHeads, geometry_.kvLayout);
     ops::PagedAttention::addPrefillStore(step.graph, step.kvLayers[layer], keys, values, sequence.pageTable,
                                          sequence.chunk, geometry_.kvLayout);
-    // Dispatch appropriate attention kernel based on plan type
-    std::visit([&](const auto &plan) {
-      using PlanType = std::decay_t<decltype(plan)>;
-      if constexpr (std::is_same_v<PlanType, ops::PrefillAttentionPlan>) {
-        // Chunked prefill
-        ops::PagedAttention::addPrefill(
-            step.graph, step.kvLayers[layer], queries, attentionRows, b.attentionPartials, b.attentionStatistics,
-            sequence.pageTable, sequence.chunk, plan);
-      } else if constexpr (std::is_same_v<PlanType, ops::ContinuousPrefillPlan>) {
-        // Continuous prefill - needs different params
-        kv::ContinuousAttentionParams params;
-        params.tokens = sequence.chunk.chunk_tokens;
-        params.committed_tokens = sequence.chunk.committed_tokens;
-        params.chunk_stride = sequence.attentionStride;
-        params.page_table_entries = 0; // Will be computed by the attention op
-        params.kv = step.kvLayers[layer];
-        // Tile sizes are hardcoded in the kernel implementation
-        params.tile_rows = 32; // Default Br
-        params.tile_cols = 32; // Default Bc
-        ops::PagedAttention::addContinuousPrefill(
-            step.graph, step.kvLayers[layer], queries, attentionRows, sequence.pageTable, params, plan);
-      }
-    }, step.attention[index]);
+    // Chunked prefill
+    ops::PagedAttention::addPrefill(
+        step.graph, step.kvLayers[layer], queries, attentionRows, b.attentionPartials, b.attentionStatistics,
+        sequence.pageTable, sequence.chunk, step.attention[index]);
     ops::PagedAttention::addPrefillGate(
         step.graph, u16(b.fullPacked, geometry_.packedFullWidth), attentionRows,
         u16(b.attentionHidden, geometry_.attentionWidth), sequence.rows, sequence.attentionStride,

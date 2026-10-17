@@ -31,10 +31,6 @@ PrefillAttentionPlan ExecutionPlans::prefillAttention(
   return PagedAttention::prefillPlan(rows, queryHeads, layout);
 }
 
-ContinuousPrefillPlan ExecutionPlans::continuousPrefillAttention(
-    uint32_t tokens, uint32_t queryHeads, kv::Layout layout) const {
-  return PagedAttention::continuousPrefillPlan(tokens, queryHeads, layout);
-}
 
 VerifyAttentionPlan ExecutionPlans::verifyAttention(
     uint32_t lanes, uint32_t queryHeads, kv::Layout layout,
