@@ -6,6 +6,7 @@
 #include "engine/Engine.hpp"
 #include "engine/ExtendedKvTier.hpp"
 #include "metal/abi/ExecutionGeometry.h"
+#include "metal/PipelineWarming.hpp"
 #include "model/WeightStore.hpp"
 #include "ops/AneFfnMeasurement.hpp"
 
@@ -777,6 +778,21 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
         std::move(kvTier), std::move(diskSpace), std::move(kvPool), std::move(cache),
         std::move(aneFfn.split), std::move(aneFfn.outcome)));
     result->adoptPersistentCache();
+    
+    // Warm critical Metal pipelines to eliminate first-request compilation penalty
+    metal::PipelineWarmingConfig warmingConfig;
+    warmingConfig.kvInt4 = (config.kvFormat == kv::Format::Int4);
+    warmingConfig.kvInt8 = (config.kvFormat == kv::Format::Int8);
+    warmingConfig.kvBf16 = (config.kvFormat == kv::Format::BFloat16);
+    
+    const auto warmingResult = metal::warmCriticalPipelines(
+        *result->backend_, result->operators_, warmingConfig);
+    
+    if (!warmingResult.success) {
+      logLine("Pipeline warming incomplete: ", warmingResult.errorMessage,
+              "; first request may see compilation delay.");
+    }
+    
     return result;
   } catch (const metal::MetalAllocationError &error) {
     throw RuntimeResourcesError(RuntimeResourceStage::StorageAllocation,
