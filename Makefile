@@ -244,6 +244,7 @@ ENGINE_CPP_SOURCES := \
 	runtime/ops/Normalization.cpp \
 	runtime/ops/PagedAttention.cpp \
 	runtime/ops/PageStorage.cpp \
+	runtime/ops/KvCompression.cpp \
 	runtime/ops/RoPE.cpp \
 	runtime/ops/RowCopy.cpp \
 	runtime/ops/Sampling.cpp \
@@ -251,8 +252,11 @@ ENGINE_CPP_SOURCES := \
 	runtime/metal/DeviceCapabilities.cpp \
 	runtime/engine/MemoryPlan.cpp \
 	runtime/engine/AneFfnStartup.cpp \
+	runtime/engine/AneFfnPersistentCache.cpp \
+	runtime/engine/SpeculationTuning.cpp \
 	runtime/engine/Scheduler.cpp \
 	runtime/engine/DynamicBatching.cpp \
+	runtime/engine/PrefillChunking.cpp \
 	runtime/engine/MemoryTelemetry.cpp \
 	runtime/engine/Cache.cpp \
 	runtime/engine/WriteBehind.cpp \

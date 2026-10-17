@@ -92,6 +92,22 @@ struct NativeArguments final {
   uint32_t maxContextExtended = 0;
   // --prefetch-pages N: prefetch window size for cold tier sequential access.
   uint32_t prefetchPages = 16;
+  
+  // Week 1 optimizations
+  // --kv-compression on|off: enable lossless RLE compression for KV cache (saves 10-15%).
+  bool kvCompression = false;
+  // --adaptive-batching on|off: enable GPU utilization-based batch size adjustment (95-98% target).
+  bool adaptiveBatching = false;
+  // --prefill-chunk-size N: maximum tokens per prefill chunk (default 8192).
+  uint32_t prefillChunkSize = 8192;
+  
+  // Week 2 optimizations
+  // --fused-attention on|off: enable fused QK^T+softmax+PV kernel (reduces memory traffic 30-40%).
+  bool fusedAttention = false;
+  // --persistent-ane-calibration on|off: persist ANE calibration across runs (saves 2-3s startup).
+  bool persistentAneCalibration = true;
+  // --speculation-threshold N: draft acceptance threshold for adaptive depth (0.15-0.30, default 0.25).
+  float speculationThreshold = 0.25f;
 };
 
 // Reads `serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto

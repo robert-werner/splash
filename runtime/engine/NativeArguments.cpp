@@ -236,6 +236,30 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
     } else if (option == "--prefetch-pages") {
       if (!parsePositive(value, result.prefetchPages))
         throw UsageError("--prefetch-pages requires a positive integer");
+    } else if (option == "--kv-compression") {
+      if (value != "on" && value != "off")
+        throw UsageError("--kv-compression requires on or off");
+      result.kvCompression = value == "on";
+    } else if (option == "--adaptive-batching") {
+      if (value != "on" && value != "off")
+        throw UsageError("--adaptive-batching requires on or off");
+      result.adaptiveBatching = value == "on";
+    } else if (option == "--prefill-chunk-size") {
+      if (!parsePositive(value, result.prefillChunkSize) || result.prefillChunkSize < 512)
+        throw UsageError("--prefill-chunk-size requires a positive integer >= 512");
+    } else if (option == "--fused-attention") {
+      if (value != "on" && value != "off")
+        throw UsageError("--fused-attention requires on or off");
+      result.fusedAttention = value == "on";
+    } else if (option == "--persistent-ane-calibration") {
+      if (value != "on" && value != "off")
+        throw UsageError("--persistent-ane-calibration requires on or off");
+      result.persistentAneCalibration = value == "on";
+    } else if (option == "--speculation-threshold") {
+      double threshold = 0.0;
+      if (!parseFinite(value, threshold) || threshold < 0.1 || threshold > 0.5)
+        throw UsageError("--speculation-threshold requires a number in [0.1, 0.5]");
+      result.speculationThreshold = static_cast<float>(threshold);
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
     } else {
