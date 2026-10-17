@@ -42,12 +42,31 @@ public:
   // This scratch is one whole-command buffer, not a per-lane arena field.
   [[nodiscard]] uint64_t gateUpWorkspace(ProjectionShape shape) const;
 
+  // Weight prefetch overlap: async copy of layer N+1 weights during layer N compute.
+  struct WeightPrefetchPlan {
+    uint64_t stagingBufferBytes{500 << 20}; // 500 MB staging buffer
+    bool enabled{true};
+    
+    [[nodiscard]] bool canPrefetch() const noexcept {
+      return enabled && stagingBufferBytes > 0;
+    }
+  };
+  
+  [[nodiscard]] WeightPrefetchPlan weightPrefetchPlan() const noexcept {
+    return prefetch_;
+  }
+  
+  void setWeightPrefetchEnabled(bool enabled) noexcept {
+    prefetch_.enabled = enabled;
+  }
+
 private:
   // The device's configuration of a MoE plan of `rows` rows in `phase`.
   [[nodiscard]] MoeConfig moeConfig(MoeShape shape, uint32_t rows, MoePhase phase) const;
 
   Linear linear_;
   GpuFamilyClass family_;
+  mutable WeightPrefetchPlan prefetch_{};
 };
 
 } // namespace splash::ops
