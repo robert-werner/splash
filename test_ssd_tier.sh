@@ -42,20 +42,25 @@ PROMPT=$(python3 -c "print('token ' * 10000)")
 curl -s http://127.0.0.1:$PORT/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d "{
-    \"model\": \"splash\",
+    \"model\": \"$MODEL\",
     \"messages\": [{\"role\": \"user\", \"content\": \"$PROMPT\nSummarize.\"}],
     \"max_tokens\": 100,
     \"stream\": false
   }" | jq '.usage'
 
+# Check metrics after small context
+echo ""
+echo "Metrics after small context:"
+curl -s http://127.0.0.1:$PORT/metrics | grep -E "extended_kv|ssd_" | head -20
+
 # Test 3: Medium context (should trigger SSD tier)
 echo ""
-echo "Test 3: Medium context (50K tokens, may use SSD)..."
-PROMPT=$(python3 -c "print('token ' * 50000)")
+echo "Test 3: Medium context (30K tokens, may use SSD)..."
+PROMPT=$(python3 -c "print('token ' * 30000)")
 curl -s http://127.0.0.1:$PORT/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d "{
-    \"model\": \"splash\",
+    \"model\": \"$MODEL\",
     \"messages\": [{\"role\": \"user\", \"content\": \"$PROMPT\nSummarize.\"}],
     \"max_tokens\": 100,
     \"stream\": false

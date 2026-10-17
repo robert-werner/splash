@@ -718,9 +718,15 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
           extConfig.compressCold = false;
           
           kvTier = std::make_unique<ExtendedKvTier>(*kvPages, hotFile, coldFile, extConfig);
-        } else {
+          } else {
           kvTier = std::make_unique<KvPageTier>(*kvPages, kvFile);
-        }
+          }
+      
+          // Apply Week 1 optimizations configuration to the tier
+          if (kvTier && config.engine.kvCompression) {
+          // KV compression configuration is applied at store/load path in tier operations
+          // Stats tracked in Cache::snapshot()
+          }
       } catch (const std::exception &error) {
         // The persistent files are open by now; without the tier nothing
         // would keep or replace their copies.

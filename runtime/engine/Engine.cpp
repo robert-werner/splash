@@ -62,9 +62,11 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
     : config_(config), cache_(cache), writeBehind_(cache), model_(model),
       events_(events), scheduler_(config_.decodeShare, config_.maxBatchSize,
                                    config_.priorityScheduling, config_.preemptThreshold),
-      dynamicBatching_(config_.dynamicBatching
-                       ? std::make_optional<DynamicBatching>(config_.maxBatchSize,
-                                                             config_.targetGpuUtilization)
+      dynamicBatching_(config_.dynamicBatching || config_.adaptiveBatching
+                       ? std::make_optional<DynamicBatching>(
+                           config_.maxBatchSize,
+                           config_.adaptiveBatching ? config_.targetGpuUtilization : 0.98,
+                           config_.targetP99LatencyMs)
                        : std::nullopt) {
   if (!config_.maxContext || !config_.vocabularySize) {
     throw std::invalid_argument("context and vocabulary sizes must be positive");
@@ -77,6 +79,10 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
     throw std::invalid_argument("max batch size must be between 1 and 16");
   if (config_.continuousPrefillThreshold > config_.maxContext)
     throw std::invalid_argument("continuous prefill threshold cannot exceed max context");
+  if (config_.prefillChunkSize < 512 || config_.prefillChunkSize > 32768)
+    throw std::invalid_argument("prefill chunk size must be between 512 and 32768");
+  if (config_.targetP99LatencyMs <= 0.0 || !std::isfinite(config_.targetP99LatencyMs))
+    throw std::invalid_argument("target P99 latency must be positive and finite");
 }
 
 void Engine::submit(EngineRequest value) {

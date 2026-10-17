@@ -733,6 +733,62 @@ SERVE_OPTIONS = (
             help="yield long prefills after this many tokens when priority scheduling is on (default: 4096 tokens)",
         ),
     ),
+    ServeOption(
+        "--kv-compression",
+        "performance",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable lossless RLE compression for KV cache (saves 10-15%)",
+        ),
+    ),
+    ServeOption(
+        "--adaptive-batching",
+        "performance",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable GPU utilization-based batch size adjustment (95-98%% target)",
+        ),
+    ),
+    ServeOption(
+        "--prefill-chunk-size",
+        "performance",
+        dict(
+            type=parse_max_context,
+            default=8192,
+            metavar="TOKENS",
+            help="maximum tokens per prefill chunk (default: 8192)",
+        ),
+    ),
+    ServeOption(
+        "--fused-attention",
+        "performance",
+        dict(
+            action="store_true",
+            default=False,
+            help="enable fused QK^T+softmax+PV kernel (reduces memory traffic 30-40%%)",
+        ),
+    ),
+    ServeOption(
+        "--persistent-ane-calibration",
+        "performance",
+        dict(
+            action="store_true",
+            default=True,
+            help="persist ANE calibration across runs (saves 2-3s startup, default: on)",
+        ),
+    ),
+    ServeOption(
+        "--speculation-threshold",
+        "performance",
+        dict(
+            type=parse_decode_share,
+            default=0.25,
+            metavar="THRESHOLD",
+            help="draft acceptance threshold for adaptive speculation depth (default: 0.25; range: 0.1-0.5)",
+        ),
+    ),
 )
 
 

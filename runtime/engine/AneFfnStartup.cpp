@@ -3,6 +3,7 @@
 #include "AwakeClock.hpp"
 #include "StderrLine.hpp"
 #include "ane/Program.hpp"
+#include "engine/AneFfnPersistentCache.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -203,15 +204,30 @@ AneFfnStart decide(const AneFfnModel &model, const AneFfnSetting &setting, Reque
     // No split gains enough: the start remembers so, and the GPU alone serves
     // its own context.
     const auto noGain = [&](std::string reason) {
-      model.remember(maxAneUnits, {});
+      if (setting.persistentCache) {
+        aneFfnPersistentCache().save(model.identifier, maxAneUnits, {});
+      } else {
+        model.remember(maxAneUnits, {});
+      }
       assumed = 0;
       return gpuAloneServing(Kind::NoGain, std::move(reason));
     };
 
-    std::optional<ane_ffn::Calibration> calibration = model.recall(maxAneUnits);
+    // Load from persistent cache if enabled
+    std::optional<ane_ffn::Calibration> calibration;
+    if (setting.persistentCache) {
+      calibration = aneFfnPersistentCache().load(model.identifier, maxAneUnits);
+    } else {
+      calibration = model.recall(maxAneUnits);
+    }
+    
     // --recalibrate-ane: forget saved calibration and recalibrate from scratch.
     if (setting.recalibrate && calibration) {
-      model.forget(maxAneUnits);
+      if (setting.persistentCache) {
+        aneFfnPersistentCache().remove(model.identifier, maxAneUnits);
+      } else {
+        model.forget(maxAneUnits);
+      }
       calibration.reset();
       logLine("Forgetting saved ANE calibration and recalibrating from scratch.");
     }
@@ -248,7 +264,11 @@ AneFfnStart decide(const AneFfnModel &model, const AneFfnSetting &setting, Reque
     take(prepared, made);
     AneFfnStart start = serve(std::move(prepared), *chosen, *minimumRows, ": " + timed + " on the GPU alone",
                               "calibrated");
-    model.remember(maxAneUnits, made);
+    if (setting.persistentCache) {
+      aneFfnPersistentCache().save(model.identifier, maxAneUnits, made);
+    } else {
+      model.remember(maxAneUnits, made);
+    }
     return start;
   } catch (const ane::Interrupted &) {
     throw;

@@ -1708,6 +1708,20 @@ def _native_command(args, relaunch_context=None):
         command.extend(("--priority-scheduling", "on"))
     if args.preempt_threshold != 4096:
         command.extend(("--preempt-threshold", str(args.preempt_threshold)))
+    # Week 1 optimizations
+    if args.kv_compression:
+        command.extend(("--kv-compression", "on"))
+    if args.adaptive_batching:
+        command.extend(("--adaptive-batching", "on"))
+    if args.prefill_chunk_size != 8192:
+        command.extend(("--prefill-chunk-size", str(args.prefill_chunk_size)))
+    # Week 2 optimizations
+    if args.fused_attention:
+        command.extend(("--fused-attention", "on"))
+    if not args.persistent_ane_calibration:
+        command.extend(("--persistent-ane-calibration", "off"))
+    if args.speculation_threshold != 0.25:
+        command.extend(("--speculation-threshold", str(args.speculation_threshold)))
     if relaunch_context is not None and args.max_context is None:
         command.extend(("--relaunch-context", str(relaunch_context)))
     return command

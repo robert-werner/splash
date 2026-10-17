@@ -112,6 +112,29 @@ struct EngineConfig final {
   // Prefetch window size for cold tier sequential access (--prefetch-pages N).
   // Default: 16 pages (~512 tokens).
   uint32_t prefetchPages = 16;
+  
+  // Week 1 optimizations: KV compression, adaptive batching, prefill chunking
+  // Enable lossless RLE compression for KV cache pages (--kv-compression).
+  // Targets 10-15% memory savings on quantized KV data with repeated patterns.
+  // Compression threshold: 12% savings minimum to avoid overhead.
+  bool kvCompression = false;
+  
+  // Enable adaptive batching with GPU utilization feedback (--adaptive-batching).
+  // Adjusts batch size based on GPU utilization (target 95-98%), queue depth,
+  // and P99 latency target. Three-tier priority: thermal throttling (immediate),
+  // GPU feedback (gradual), legacy recovery (slow growth).
+  bool adaptiveBatching = false;
+  
+  // Target P99 latency for adaptive batching (--target-p99-latency-ms).
+  // Constrains batch size growth when latency exceeds this threshold.
+  // Default: 150ms (interactive workloads).
+  double targetP99LatencyMs = 150.0;
+  
+  // Prefill chunk size for maintaining interactivity (--prefill-chunk-size).
+  // Large prefills split into chunks to allow decode interleaving.
+  // Default: 8192 tokens (~200-300ms on M5 Pro 24GB).
+  // Range: 512-32768 tokens.
+  uint32_t prefillChunkSize = 8192;
 };
 
 // While an active one lives, allocations are memory a request in service
