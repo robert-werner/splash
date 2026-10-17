@@ -87,6 +87,11 @@ struct NativeArguments final {
   std::string ssdKvPath = "";
   // --hot-tier-tokens N: hot tier token capacity in RAM before demotion to SSD.
   uint32_t hotTierTokens = 200 * 1024;
+  // --max-context-extended N: maximum extended context tokens (hot + cold tiers).
+  // 0 = disabled (uses baseline KvPageTier ≤262K).
+  uint32_t maxContextExtended = 0;
+  // --prefetch-pages N: prefetch window size for cold tier sequential access.
+  uint32_t prefetchPages = 16;
 };
 
 // Reads `serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto

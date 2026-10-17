@@ -230,17 +230,12 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (!parsePositive(value, threshold) || threshold == 0)
         throw UsageError("--preempt-threshold requires a positive integer");
       result.preemptThreshold = threshold;
-    } else if (option == "--ssd-kv") {
-      if (value != "on" && value != "off")
-        throw UsageError("--ssd-kv requires on or off");
-      result.ssdKvEnabled = value == "on";
-    } else if (option == "--ssd-kv-path") {
-      if (value.empty())
-        throw UsageError("--ssd-kv-path requires a path");
-      result.ssdKvPath = std::string(value);
-    } else if (option == "--hot-tier-tokens") {
-      if (!parsePositive(value, result.hotTierTokens))
-        throw UsageError("--hot-tier-tokens requires a positive integer");
+    } else if (option == "--max-context-extended") {
+      if (!parsePositive(value, result.maxContextExtended))
+        throw UsageError("--max-context-extended requires a positive integer");
+    } else if (option == "--prefetch-pages") {
+      if (!parsePositive(value, result.prefetchPages))
+        throw UsageError("--prefetch-pages requires a positive integer");
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
     } else {

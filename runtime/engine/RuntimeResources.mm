@@ -696,7 +696,8 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
           kvFile = std::make_shared<model::SlotFile>(slotBytes, diskBudget);
         
         // Conditionally create ExtendedKvTier (hot+cold SSD architecture) or standard KvPageTier.
-        if (config.engine.ssdKvEnabled) {
+        // ExtendedKvTier requires both ssdKvEnabled=true and maxContextExtended > 0.
+        if (config.engine.ssdKvEnabled && config.engine.maxContextExtended > 0) {
           const std::filesystem::path ssdPath(config.engine.ssdKvPath);
           const std::filesystem::path hotSlots = ssdPath / "kv_hot_slots.bin";
           const std::filesystem::path hotRecords = ssdPath / "kv_hot_records.bin";
@@ -712,8 +713,8 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
           ExtendedKvTier::Config extConfig;
           extConfig.coldTierPath = config.engine.ssdKvPath;
           extConfig.hotTierTokens = config.engine.hotTierTokens;
-          extConfig.maxExtendedTokens = 1024 * 1024;
-          extConfig.prefetchPages = 16;
+          extConfig.maxExtendedTokens = config.engine.maxContextExtended;
+          extConfig.prefetchPages = config.engine.prefetchPages;
           extConfig.compressCold = false;
           
           kvTier = std::make_unique<ExtendedKvTier>(*kvPages, hotFile, coldFile, extConfig);

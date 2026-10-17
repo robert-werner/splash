@@ -106,6 +106,12 @@ struct EngineConfig final {
   // Hot tier token capacity in RAM before demotion to SSD (--hot-tier-tokens N).
   // Default: 200K tokens (6.4GB at bf16, ~3GB at int8).
   uint32_t hotTierTokens = 200 * 1024;
+  // Maximum extended context tokens (hot + cold tiers, --max-context-extended N).
+  // Default: 1M tokens. 0 = disabled, uses baseline KvPageTier (≤262K).
+  uint32_t maxContextExtended = 0;
+  // Prefetch window size for cold tier sequential access (--prefetch-pages N).
+  // Default: 16 pages (~512 tokens).
+  uint32_t prefetchPages = 16;
 };
 
 // While an active one lives, allocations are memory a request in service

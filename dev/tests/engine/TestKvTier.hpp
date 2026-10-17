@@ -2,6 +2,10 @@
 
 #include "engine/KvTier.hpp"
 
+namespace splash::model {
+struct SlotRecord;
+}
+
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -52,6 +56,9 @@ public:
     return start();
   }
   void poll() override {}
+  std::shared_ptr<engine::KvDiskSlot> adopt(const model::SlotRecord &) override {
+    return std::make_shared<Slot>(*this);
+  }
 
   // Finishes every transfer still in flight.
   void complete(bool success = true) {
