@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 
 namespace splash::engine {
 
@@ -14,6 +15,24 @@ void DynamicBatching::observeDecodeBatch(uint32_t batchSize,
 
   // Normalize to per-request time for thermal detection
   const double timePerRequest = wallMilliseconds / batchSize;
+  
+  // Record latency in histogram for P99 tracking
+  const size_t bucket = std::min(
+      static_cast<size_t>(wallMilliseconds / kLatencyBucketSizeMs),
+      kLatencyHistogramBuckets - 1);
+  latencyHistogram_[bucket]++;
+  latencyHistogramCount_++;
+  
+  // Keep histogram window bounded
+  if (latencyHistogramCount_ > kLatencyHistogramWindow) {
+    // Scale down all buckets proportionally to maintain window size
+    const double scale = static_cast<double>(kLatencyHistogramWindow) / 
+                        latencyHistogramCount_;
+    for (auto &count : latencyHistogram_) {
+      count = static_cast<uint32_t>(count * scale);
+    }
+    latencyHistogramCount_ = kLatencyHistogramWindow;
+  }
 
   // Initialize baseline on first observation
   if (baselineDecodeTime_ == 0.0) {
@@ -63,6 +82,9 @@ void DynamicBatching::observeDecodeBatch(uint32_t batchSize,
     // Check GPU utilization with hysteresis
     const double lowerBound = targetGpuUtilization_ - kUtilizationMargin;
     const double upperBound = targetGpuUtilization_ + kUtilizationMargin;
+    
+    // Get current P99 latency estimate
+    const double currentP99 = estimateP99();
 
     if (gpuUtilizationEma_ < lowerBound) {
       // Underutilized: consider growing batch size
@@ -71,14 +93,15 @@ void DynamicBatching::observeDecodeBatch(uint32_t batchSize,
 
       if (consecutiveUnderutilized_ >= kUtilizationObservations &&
           currentMaxBatchSize_ < baseMaxBatchSize_ &&
-          queueDepthEma_ >= 2.0) { // Ensure sufficient queue depth
+          queueDepthEma_ >= 2.0 && // Ensure sufficient queue depth
+          currentP99 < targetP99LatencyMs_) { // Respect P99 latency target
         // Increment by 1, conservative growth
         currentMaxBatchSize_ = std::min(baseMaxBatchSize_, currentMaxBatchSize_ + 1);
         consecutiveUnderutilized_ = 0;
         return; // Priority 2 action taken
       }
-    } else if (gpuUtilizationEma_ > upperBound) {
-      // Overutilized: reduce batch size
+    } else if (gpuUtilizationEma_ > upperBound || currentP99 > targetP99LatencyMs_) {
+      // Overutilized OR P99 latency exceeded: reduce batch size
       consecutiveOverutilized_++;
       consecutiveUnderutilized_ = 0;
 
@@ -110,6 +133,28 @@ void DynamicBatching::observeDecodeBatch(uint32_t batchSize,
       consecutiveFastBatches_ = 0;
     }
   }
+}
+
+double DynamicBatching::estimateP99() const noexcept {
+  if (latencyHistogramCount_ == 0)
+    return 0.0;
+  
+  // Calculate P99 threshold (99th percentile position)
+  const uint32_t p99Threshold = static_cast<uint32_t>(
+      latencyHistogramCount_ * 0.99);
+  
+  // Find the bucket containing the P99 value
+  uint32_t cumulative = 0;
+  for (size_t i = 0; i < kLatencyHistogramBuckets; ++i) {
+    cumulative += latencyHistogram_[i];
+    if (cumulative >= p99Threshold) {
+      // Return the upper bound of this bucket
+      return (i + 1) * kLatencyBucketSizeMs;
+    }
+  }
+  
+  // Fallback: return the maximum bucket value
+  return kLatencyHistogramBuckets * kLatencyBucketSizeMs;
 }
 
 } // namespace splash::engine
