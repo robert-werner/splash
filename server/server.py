@@ -1699,6 +1699,8 @@ def _native_command(args, relaunch_context=None):
         ("--lazy-ane-allocation", args.lazy_ane_allocation),
         ("--kv-defragmentation", args.kv_defragmentation),
         ("--vision-text-only", args.vision_text_only),
+        ("--recalibrate-ane", args.recalibrate_ane),
+        ("--lazy-draft-loading", args.lazy_draft_loading),
     ):
         if enabled:
             command.extend((name, "on"))

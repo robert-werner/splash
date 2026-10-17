@@ -209,6 +209,12 @@ AneFfnStart decide(const AneFfnModel &model, const AneFfnSetting &setting, Reque
     };
 
     std::optional<ane_ffn::Calibration> calibration = model.recall(maxAneUnits);
+    // --recalibrate-ane: forget saved calibration and recalibrate from scratch.
+    if (setting.recalibrate && calibration) {
+      model.forget(maxAneUnits);
+      calibration.reset();
+      logLine("Forgetting saved ANE calibration and recalibrating from scratch.");
+    }
     if (calibration && calibration->aneUnits &&
         (calibration->aneUnits > maxAneUnits || calibration->minimumRows < ops::AneFfn::kMinimumRows ||
          calibration->minimumRows > ops::AneFfn::kMaximumRows))

@@ -152,6 +152,8 @@ struct RuntimeResourcesConfig {
   bool lazyAneAllocation = false;
   bool kvDefragmentation = false;
   bool visionTextOnly = false;
+  bool recalibrateAne = false;
+  bool lazyDraftLoading = false;
   
   EngineConfig engine;
 };

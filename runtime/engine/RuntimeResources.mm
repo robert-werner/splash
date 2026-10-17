@@ -513,6 +513,13 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
   const AneFfnModel splitModel =
       aneFfnModel(*backend, loaded, operators, config.kvFormat, config.buildId, config.cancelled);
   EngineMemoryPlanResult planResult = planMemory(0);
+  
+  // --recalibrate-ane: request the split to forget its calibration on this start.
+  AneFfnSetting aneFfnSetting = config.aneFfn;
+  if (config.recalibrateAne) {
+    aneFfnSetting.recalibrate = true;
+  }
+  
   // The automatic tier keeps its staging only where the plan holds the model
   // and the requested context beside it. The split wins over it: where the
   // plan refuses the split beside the staging but not without it, the tier
@@ -527,8 +534,8 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
                   ? "the memory plan cannot hold a " + std::to_string(requestedContextTokens) +
                         "-token context beside its state staging"
                   : std::string("the memory plan cannot hold the model beside its state staging"));
-    else if (aneFfnRefused(splitModel, config.aneFfn, requestedContextTokens, planMemory) &&
-             !aneFfnRefused(splitModel, config.aneFfn, requestedContextTokens, withoutStaging))
+    else if (aneFfnRefused(splitModel, aneFfnSetting, requestedContextTokens, planMemory) &&
+             !aneFfnRefused(splitModel, aneFfnSetting, requestedContextTokens, withoutStaging))
       diskOff(requestedContextTokens
                   ? "the memory plan cannot hold the Neural Engine FFN split and a " +
                         std::to_string(requestedContextTokens) +
@@ -584,7 +591,7 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
                                : RequestedContext{.tokens = config.relaunchContext,
                                                   .relaunch = config.relaunchContext != 0};
     AneFfnStart aneFfn =
-        startAneFfn(splitModel, config.aneFfn, splitContext, planMemory, config.cancelled);
+        startAneFfn(splitModel, aneFfnSetting, splitContext, planMemory, config.cancelled);
     if (aneFfn.plan)
       memoryPlan = std::move(*aneFfn.plan);
     const EngineMemoryBreakdown &budget = memoryPlan.breakdown();

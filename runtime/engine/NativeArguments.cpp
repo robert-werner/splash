@@ -187,6 +187,14 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (value != "on" && value != "off")
         throw UsageError("--vision-text-only requires on or off");
       result.visionTextOnly = value == "on";
+    } else if (option == "--recalibrate-ane") {
+      if (value != "on" && value != "off")
+        throw UsageError("--recalibrate-ane requires on or off");
+      result.recalibrateAne = value == "on";
+    } else if (option == "--lazy-draft-loading") {
+      if (value != "on" && value != "off")
+        throw UsageError("--lazy-draft-loading requires on or off");
+      result.lazyDraftLoading = value == "on";
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
     } else {

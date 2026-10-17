@@ -696,6 +696,24 @@ SERVE_OPTIONS = (
             help="skip the vision tower on a text-only workload, leaving its memory to the KV cache",
         ),
     ),
+    ServeOption(
+        "--recalibrate-ane",
+        "requests",
+        dict(
+            action="store_true",
+            default=False,
+            help="forget saved ANE calibration and recalibrate from scratch on this start",
+        ),
+    ),
+    ServeOption(
+        "--lazy-draft-loading",
+        "memory",
+        dict(
+            action="store_true",
+            default=False,
+            help="defer draft model loading until the first request, leaving its memory to the KV cache",
+        ),
+    ),
 )
 
 

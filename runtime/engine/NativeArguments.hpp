@@ -66,6 +66,10 @@ struct NativeArguments final {
   bool lazyAneAllocation = false;
   bool kvDefragmentation = false;
   bool visionTextOnly = false;
+  // --recalibrate-ane: forget saved ANE calibration and recalibrate.
+  bool recalibrateAne = false;
+  // --lazy-draft-loading: defer draft model load until first request.
+  bool lazyDraftLoading = false;
 };
 
 // Reads `serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto

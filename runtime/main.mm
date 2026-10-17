@@ -218,6 +218,8 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.lazyAneAllocation = arguments.lazyAneAllocation;
   config.resources.kvDefragmentation = arguments.kvDefragmentation;
   config.resources.visionTextOnly = arguments.visionTextOnly;
+  config.resources.recalibrateAne = arguments.recalibrateAne;
+  config.resources.lazyDraftLoading = arguments.lazyDraftLoading;
   config.nativeLoop.engine.maxContext = arguments.maxContext;
   config.nativeLoop.engine.decodeShare = arguments.decodeShare;
   return config;
