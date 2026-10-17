@@ -31,6 +31,12 @@ bool listed(std::span<const uint64_t> ids, uint64_t id) noexcept {
   return std::find(ids.begin(), ids.end(), id) != ids.end();
 }
 
+enum class RequestWorkloadClass : uint8_t {
+  Interactive,  // < interactiveThreshold tokens: prioritize for low latency
+  Batch,        // > batchThreshold tokens: yield to interactive requests
+  Normal,       // between thresholds: standard priority
+};
+
 } // namespace
 
 void Scheduler::submit(RequestSpec request) {
@@ -288,6 +294,20 @@ Scheduler::planPrefill(std::vector<PrefillRequestView> ready) const {
                 return a.request->spec.priority < b.request->spec.priority;
               if (overdue(a) != overdue(b))
                 return overdue(a);
+              
+              // Context-aware scheduling: prioritize interactive requests over batch
+              if (priorityScheduling_) {
+                const bool aInteractive = isInteractive(*a.request);
+                const bool bInteractive = isInteractive(*b.request);
+                if (aInteractive != bInteractive)
+                  return aInteractive; // interactive first
+                
+                const bool aBatch = isBatch(*a.request);
+                const bool bBatch = isBatch(*b.request);
+                if (aBatch != bBatch)
+                  return !aBatch; // non-batch first
+              }
+              
               const uint32_t remainingA =
                   a.request->spec.prefillTokens - a.promptProcessed;
               const uint32_t remainingB =
@@ -597,6 +617,16 @@ bool Scheduler::byPriorityThenOrder(const Request *a,
   if (a->spec.priority != b->spec.priority)
     return a->spec.priority < b->spec.priority;
   return a->order < b->order;
+}
+
+bool Scheduler::isInteractive(const Request &request) const noexcept {
+  return priorityScheduling_ && 
+         request.spec.prefillTokens < interactiveThreshold_;
+}
+
+bool Scheduler::isBatch(const Request &request) const noexcept {
+  return priorityScheduling_ &&
+         request.spec.prefillTokens > batchThreshold_;
 }
 
 } // namespace splash::engine

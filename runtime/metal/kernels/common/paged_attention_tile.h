@@ -88,7 +88,7 @@ inline void splash_attention_page_softmax(
     device const float4 *key_scales, device const float4 *value_scales,
     uint token_start,
     uint visible_tokens, uint committed_tokens, uint active_rows,
-    uint thread_index) {
+    uint thread_index [[thread_position_in_threadgroup]]) {
   constexpr uint N = SplashKvPageTokens;
   constexpr uint FusedRows = RowsPerTile * QueryHeadsPerKVHead;
   constexpr uint TokensPerLane = 8;
@@ -105,6 +105,7 @@ inline void splash_attention_page_softmax(
       committed_tokens + min(query_row, active_rows - 1) + 1;
   const uint limit = min(visible_tokens, causal_end);
   const uint token = token_start + column;
+  // Prefetch scores into registers early to hide latency
   threadgroup const float4 *scores4 =
       reinterpret_cast<threadgroup const float4 *>(scores + fused_row * N +
                                                    column);
@@ -113,9 +114,13 @@ inline void splash_attention_page_softmax(
   {
     float4 low = scores4[0], high = scores4[1];
     if constexpr (Quantized) {
-      low *= key_scales[vector];
-      high *= key_scales[vector + 1];
+      // Prefetch scales to reduce stalls
+      const float4 key_low = key_scales[vector];
+      const float4 key_high = key_scales[vector + 1];
+      low *= key_low;
+      high *= key_high;
     }
+    // Fused multiply by 1/16 (softmax temperature)
     low *= 0.0625f;
     high *= 0.0625f;
     score[0] = low.x, score[1] = low.y, score[2] = low.z, score[3] = low.w;
@@ -188,7 +193,7 @@ inline void splash_paged_attention_tile(
     threadgroup float *scores, threadgroup bfloat *probabilities,
     threadgroup float *row_max, threadgroup float *row_sum,
     threadgroup float *previous_scale, threadgroup atomic_uint *rescale,
-    uint thread_index) {
+    uint thread_index [[thread_position_in_threadgroup]]) {
   constexpr ushort M = RowsPerTile * QueryHeadsPerKVHead;
   // INT4 carries INT8's per-(token, head) scales, so it takes the same
   // scaled softmax path.

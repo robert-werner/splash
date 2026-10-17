@@ -153,6 +153,9 @@ private:
   [[nodiscard]] uint32_t
   prefillBudget(const PrefillRequestView &leader,
                 std::span<const PrefillRequestView> ready) const;
+  // Classify request by prefill size: interactive, normal, or batch.
+  [[nodiscard]] bool isInteractive(const Request &request) const noexcept;
+  [[nodiscard]] bool isBatch(const Request &request) const noexcept;
   // Debt is owed only to requests that decode or wait for a mask: once the
   // last one leaves, a later decoder starts without it.
   void dropStaleDecodeDebt() noexcept;
