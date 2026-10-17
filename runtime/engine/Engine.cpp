@@ -60,7 +60,8 @@ std::string resourceTimeoutMessage(metal::AllocationFailure failure) {
 Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
                EngineEventSink &events)
     : config_(config), cache_(cache), writeBehind_(cache), model_(model),
-      events_(events), scheduler_(config_.decodeShare, config_.maxBatchSize),
+      events_(events), scheduler_(config_.decodeShare, config_.maxBatchSize,
+                                   config_.priorityScheduling, config_.preemptThreshold),
       dynamicBatching_(config_.dynamicBatching
                        ? std::make_optional<DynamicBatching>(config_.maxBatchSize)
                        : std::nullopt) {

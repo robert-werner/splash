@@ -714,6 +714,25 @@ SERVE_OPTIONS = (
             help="defer draft model loading until the first request, leaving its memory to the KV cache",
         ),
     ),
+    ServeOption(
+        "--priority-scheduling",
+        "requests",
+        dict(
+            choices=("on", "off"),
+            default="off",
+            help="enable context-aware priority scheduling: short requests first, preemption for long prefills (default: off)",
+        ),
+    ),
+    ServeOption(
+        "--preempt-threshold",
+        "requests",
+        dict(
+            type=parse_max_context,
+            default=4096,
+            metavar="TOKENS",
+            help="yield long prefills after this many tokens when priority scheduling is on (default: 4096 tokens)",
+        ),
+    ),
 )
 
 

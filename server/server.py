@@ -1704,6 +1704,10 @@ def _native_command(args, relaunch_context=None):
     ):
         if enabled:
             command.extend((name, "on"))
+    if args.priority_scheduling == "on":
+        command.extend(("--priority-scheduling", "on"))
+    if args.preempt_threshold != 4096:
+        command.extend(("--preempt-threshold", str(args.preempt_threshold)))
     if relaunch_context is not None and args.max_context is None:
         command.extend(("--relaunch-context", str(relaunch_context)))
     return command

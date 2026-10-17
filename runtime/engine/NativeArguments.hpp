@@ -47,6 +47,10 @@ struct NativeArguments final {
   uint32_t maxBatchSize = EngineConfig{}.maxBatchSize;
   // --dynamic-batching on|off: enable adaptive batch size adjustment.
   bool dynamicBatching = EngineConfig{}.dynamicBatching;
+  // --priority-scheduling on|off: enable context-aware request prioritization.
+  bool priorityScheduling = EngineConfig{}.priorityScheduling;
+  // --preempt-threshold N: token count where long prefills yield.
+  uint32_t preemptThreshold = EngineConfig{}.preemptThreshold;
   // --continuous-attention-threshold N: token count for continuous prefill.
   uint32_t continuousAttentionThreshold = EngineConfig{}.continuousPrefillThreshold;
   uint32_t maxImagePatches = ops::kMaximumImagePatches;

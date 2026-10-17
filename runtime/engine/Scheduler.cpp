@@ -365,6 +365,13 @@ uint32_t Scheduler::prefillBudget(
   // The first sample and minimum matrix shape remain limits.
   if (contended)
     return rows;
+  
+  // Preemption: if priority scheduling enabled and leader is a long prefill,
+  // limit budget to preemptThreshold to yield to interactive requests
+  if (priorityScheduling_ && isBatch(*leader.request)) {
+    return std::min(rows, preemptThreshold_);
+  }
+  
   // A leader that finishes within the full budget ends the command at its
   // last row: prefill cost is linear above the slice, so shortest-first
   // sequential commands minimise first-token latency. Long prefills share a

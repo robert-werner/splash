@@ -61,6 +61,14 @@ struct EngineConfig final {
   // thermal state, and available requests. Prevents resource exhaustion
   // under varying load.
   bool dynamicBatching = false;
+  // Enable context-aware priority scheduling (--priority-scheduling). When true,
+  // scheduler prioritizes interactive requests (<1K tokens) over batch requests
+  // (>10K tokens) to minimize p99 latency for short prompts.
+  bool priorityScheduling = false;
+  // Token threshold for preempting long prefills (--preempt-threshold). Long
+  // prefills yield after processing this many tokens, allowing interactive
+  // requests to proceed. Default: 4096 tokens.
+  uint32_t preemptThreshold = 4096;
   // Enable continuous attention for long prompts (FlashAttention-3 style).
   // When true, prompts above continuousPrefillThreshold use a single-pass
   // attention kernel that eliminates intermediate KV cache writes.

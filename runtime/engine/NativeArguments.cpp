@@ -195,6 +195,15 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (value != "on" && value != "off")
         throw UsageError("--lazy-draft-loading requires on or off");
       result.lazyDraftLoading = value == "on";
+    } else if (option == "--priority-scheduling") {
+      if (value != "on" && value != "off")
+        throw UsageError("--priority-scheduling requires on or off");
+      result.priorityScheduling = value == "on";
+    } else if (option == "--preempt-threshold") {
+      uint32_t threshold = 0;
+      if (!parsePositive(value, threshold) || threshold == 0)
+        throw UsageError("--preempt-threshold requires a positive integer");
+      result.preemptThreshold = threshold;
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
     } else {

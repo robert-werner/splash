@@ -64,8 +64,18 @@ public:
   // Decode time owed for each unit of time a prefill runs while requests of
   // equal or higher priority decode; zero alternates one command of each kind.
   // maxBatchSize limits concurrent decode lanes (1-16, default 4).
-  explicit Scheduler(double decodeShare, uint32_t maxBatchSize = 4) noexcept 
-      : decodeShare_(decodeShare), maxBatchSize_(maxBatchSize) {}
+  // priorityScheduling enables context-aware priority queue.
+  // preemptThreshold: token count where long prefills yield (default 4096).
+  // interactiveThreshold: tokens below this are interactive (default 1024).
+  // batchThreshold: tokens above this are batch workload (default 10240).
+  explicit Scheduler(double decodeShare, uint32_t maxBatchSize = 4,
+                    bool priorityScheduling = false,
+                    uint32_t preemptThreshold = 4096,
+                    uint32_t interactiveThreshold = 1024,
+                    uint32_t batchThreshold = 10240) noexcept 
+      : decodeShare_(decodeShare), maxBatchSize_(maxBatchSize),
+        priorityScheduling_(priorityScheduling), preemptThreshold_(preemptThreshold),
+        interactiveThreshold_(interactiveThreshold), batchThreshold_(batchThreshold) {}
   
   // Update maximum batch size (for dynamic batching)
   void setMaxBatchSize(uint32_t maxBatchSize) noexcept {
@@ -169,6 +179,11 @@ private:
   double prefillMillisecondsPerToken_ = 0.0;
   double decodeShare_;
   uint32_t maxBatchSize_;
+  // Context-aware priority scheduling configuration
+  bool priorityScheduling_;
+  uint32_t preemptThreshold_;
+  uint32_t interactiveThreshold_;
+  uint32_t batchThreshold_;
   // Decode time that prefill still owes the lanes that decoded beside it
   // (not those waiting for a mask): equal-priority decode runs until its
   // commands' wall time has worked it off.
