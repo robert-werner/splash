@@ -127,10 +127,15 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
     const std::string_view option(argv[next]);
     const std::string_view value(next + 1 < argc ? argv[next + 1] : "");
     if (option == "--kv-format") {
-      if (value != "int8" && value != "bf16" && value != "int4")
-        throw UsageError("--kv-format requires int8, bf16, or int4");
-      result.kvFormat = value == "int8" ? kv::Format::Int8 : 
-                        value == "int4" ? kv::Format::Int4 : kv::Format::BFloat16;
+      // Int4 is not implemented: the page geometry sizes it as two bytes per
+      // element (the same as bf16), so selecting it doubles KV memory instead
+      // of halving it, and no kernel quantizes or reads it back. Refusing it
+      // here beats a memory plan that fails for an unrelated-looking reason.
+      if (value == "int4")
+        throw UsageError("--kv-format int4 is not implemented yet; use int8 or bf16");
+      if (value != "int8" && value != "bf16")
+        throw UsageError("--kv-format requires int8 or bf16");
+      result.kvFormat = value == "int8" ? kv::Format::Int8 : kv::Format::BFloat16;
     } else if (option == "--state-format") {
       if (value != "fp32" && value != "bf16")
         throw UsageError("--state-format requires fp32 or bf16");

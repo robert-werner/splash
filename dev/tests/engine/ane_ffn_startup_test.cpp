@@ -186,6 +186,25 @@ void testOff() {
           "--disable-ane was logged for a model the split does not take");
 }
 
+// --lazy-ane-allocation defers the split while no context is asked for, but
+// still reports the context the plan holds without it: the bootstrap reads
+// that context when the server asks for none, so an outcome without one would
+// leave the engine with no window at all.
+void testLazyAllocationDefersButKeepsTheContext() {
+  Fake fake;
+  Started started = start(fake, {.lazyAllocation = true});
+  require(started.start.outcome.kind == Kind::Off && nothingStarted(fake, started) &&
+              started.start.outcome.context == contextWith(0) &&
+              started.start.outcome.contextWithout == contextWith(0),
+          "lazy allocation did not leave the context the plan holds without the split");
+
+  // A context asked for is not deferred: the split is decided as usual.
+  const uint32_t context = contextWith(fake.bytes(5));
+  started = start(fake, {.lazyAllocation = true}, {context});
+  require(started.start.outcome.kind == Kind::Split && fake.prepared == std::pair(5u, true),
+          "lazy allocation deferred a context that was asked for");
+}
+
 // A model of no dense FFN layers logs nothing; one whose layers the split does not take, or on a Mac without the
 // private Neural Engine interface, says why. Each serves the context the plan holds without the split.
 void testUnsupported() {
@@ -603,6 +622,7 @@ void testGivenShare() {
 int main() {
   try {
     testOff();
+    testLazyAllocationDefersButKeepsTheContext();
     testUnsupported();
     testRefusedContext();
     testRefusedAutomatic();

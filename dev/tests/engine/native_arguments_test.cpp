@@ -213,9 +213,12 @@ void testRefusals() {
             "the engine read a command line it must refuse");
   };
   refuses({"auto", "auto", "--kv-format", "fp16"},
-          "--kv-format requires int8, bf16, or int4");
+          "--kv-format requires int8 or bf16");
   // An option's missing value fails its check.
-  refuses({"auto", "auto", "--kv-format"}, "--kv-format requires int8, bf16, or int4");
+  refuses({"auto", "auto", "--kv-format"}, "--kv-format requires int8 or bf16");
+  // Int4 is refused by name: its geometry is not implemented.
+  refuses({"auto", "auto", "--kv-format", "int4"},
+          "--kv-format int4 is not implemented yet");
   refuses({"auto", "auto", "--state-format", "fp16"},
           "--state-format requires fp32 or bf16");
   refuses({"auto", "auto", "--state-format"}, "--state-format requires fp32 or bf16");

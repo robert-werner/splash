@@ -99,6 +99,12 @@ AneFfnStart decide(const AneFfnModel &model, const AneFfnSetting &setting, Reque
   const auto gpuAlone = [&](Kind kind, std::string reason, uint32_t context) {
     return AneFfnStart{{}, {}, {kind, std::move(reason), context, without}};
   };
+  // LazyAneAllocation: defer the split until there are tokens to place. The
+  // outcome carries the context the plan holds without it, which the bootstrap
+  // reads when no context is asked for; returning an empty outcome here would
+  // leave the engine with no context window at all.
+  if (setting.lazyAllocation && requested.tokens == 0)
+    return gpuAlone(Kind::Off, "lazy allocation deferred the split until the first request", without);
   if (std::optional<std::pair<Kind, std::string>> off = notRunning(model, setting))
     return gpuAlone(off->first, std::move(off->second), without);
   const std::optional<uint32_t> given =
@@ -279,10 +285,6 @@ AneFfnSetting AneFfnSetting::fromGiven(std::optional<double> share, std::optiona
 AneFfnStart startAneFfn(const AneFfnModel &model, const AneFfnSetting &setting, RequestedContext requested,
                         const std::function<EngineMemoryPlanResult(uint64_t aneFfnBytes)> &planMemory,
                         const std::function<bool()> &cancelled) {
-  // LazyAneAllocation: skip ANE if lazy policy says defer
-  if (setting.lazyAllocation && requested.tokens == 0) {
-    return {{}, {}, {Kind::Off, "lazy allocation deferred ANE until first tokens", 0, 0}};
-  }
   AneFfnStart start = decide(model, setting, requested, planMemory, cancelled);
   logOutcome(start.outcome, model, setting, requested);
   return start;
