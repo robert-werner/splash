@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <stdexcept>
+#include <string>
 
 namespace splash::engine {
 
@@ -50,6 +51,8 @@ struct NativeArguments final {
   uint32_t maxBatchSize = EngineConfig{}.maxBatchSize;
   // --dynamic-batching on|off: enable adaptive batch size adjustment.
   bool dynamicBatching = EngineConfig{}.dynamicBatching;
+  // --target-gpu-utilization N: target GPU utilization for dynamic batching (0.0-1.0).
+  double targetGpuUtilization = EngineConfig{}.targetGpuUtilization;
   // --priority-scheduling on|off: enable context-aware request prioritization.
   bool priorityScheduling = EngineConfig{}.priorityScheduling;
   // --preempt-threshold N: token count where long prefills yield.
@@ -78,8 +81,12 @@ struct NativeArguments final {
   // --lazy-draft-loading: defer draft model load until first request.
   bool lazyDraftLoading = false;
   
-  // --target-gpu-utilization: target GPU utilization for dynamic batching (0.0, 1.0].
-  double targetGpuUtilization = 0.98;
+  // --ssd-kv on|off: enable SSD-backed extended KV cache tier.
+  bool ssdKvEnabled = false;
+  // --ssd-kv-path PATH: path for SSD KV storage (required when --ssd-kv on).
+  std::string ssdKvPath = "";
+  // --hot-tier-tokens N: hot tier token capacity in RAM before demotion to SSD.
+  uint32_t hotTierTokens = 200 * 1024;
 };
 
 // Reads `serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto

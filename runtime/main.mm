@@ -220,6 +220,9 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.visionTextOnly = arguments.visionTextOnly;
   config.resources.recalibrateAne = arguments.recalibrateAne;
   config.resources.lazyDraftLoading = arguments.lazyDraftLoading;
+  config.resources.ssdKvEnabled = arguments.ssdKvEnabled;
+  config.resources.ssdKvPath = arguments.ssdKvPath;
+  config.resources.hotTierTokens = arguments.hotTierTokens;
   config.nativeLoop.engine.maxContext = arguments.maxContext;
   config.nativeLoop.engine.decodeShare = arguments.decodeShare;
   return config;

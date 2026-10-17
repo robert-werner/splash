@@ -78,6 +78,13 @@ double parseDecodeShare(std::string_view value) {
   return result;
 }
 
+double parseTargetGpuUtilization(std::string_view value) {
+  double result = 0.0;
+  if (!parseFinite(value, result) || result <= 0.0 || result > 1.0)
+    throw UsageError("--target-gpu-utilization requires a number in (0.0, 1.0]");
+  return result;
+}
+
 uint32_t parseMaxBatchSize(std::string_view value) {
   uint32_t result = 0;
   if (!parsePositive(value, result) || result < 1 || result > 16)
@@ -89,13 +96,6 @@ uint32_t parseContinuousAttentionThreshold(std::string_view value) {
   uint32_t result = 0;
   if (!parsePositive(value, result))
     throw UsageError("--continuous-attention-threshold requires a positive integer");
-  return result;
-}
-
-double parseTargetGpuUtilization(std::string_view value) {
-  double result = 0.0;
-  if (!parseFinite(value, result) || result <= 0.0 || result > 1.0)
-    throw UsageError("--target-gpu-utilization requires a number in (0.0, 1.0]");
   return result;
 }
 
@@ -181,6 +181,8 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (value != "on" && value != "off")
         throw UsageError("--dynamic-batching requires on or off");
       result.dynamicBatching = value == "on";
+    } else if (option == "--target-gpu-utilization") {
+      result.targetGpuUtilization = parseTargetGpuUtilization(value);
     } else if (option == "--continuous-attention-threshold") {
       result.continuousAttentionThreshold = parseContinuousAttentionThreshold(value);
     } else if (option == "--lazy-ane-allocation") {
@@ -208,6 +210,17 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (value != "on" && value != "off")
         throw UsageError("--lazy-draft-loading requires on or off");
       result.lazyDraftLoading = value == "on";
+    } else if (option == "--ssd-kv") {
+      if (value != "on" && value != "off")
+        throw UsageError("--ssd-kv requires on or off");
+      result.ssdKvEnabled = value == "on";
+    } else if (option == "--ssd-kv-path") {
+      if (value.empty())
+        throw UsageError("--ssd-kv-path requires a directory path");
+      result.ssdKvPath = std::string(value);
+    } else if (option == "--hot-tier-tokens") {
+      if (!parsePositive(value, result.hotTierTokens))
+        throw UsageError("--hot-tier-tokens requires a positive integer");
     } else if (option == "--priority-scheduling") {
       if (value != "on" && value != "off")
         throw UsageError("--priority-scheduling requires on or off");
@@ -219,8 +232,6 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       result.preemptThreshold = threshold;
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
-    } else if (option == "--target-gpu-utilization") {
-      result.targetGpuUtilization = parseTargetGpuUtilization(value);
     } else {
       throw UsageError("unexpected argument " + std::string(option));
     }
@@ -231,6 +242,8 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
     throw UsageError("--max-cache-disk-writes requires an SSD cache, which MAX_CACHE_DISK_BYTES 0 turns off");
   if (!result.cacheRoot.empty() && !result.persistentCache)
     throw UsageError("--cache-dir requires --persistent-cache on");
+  if (result.ssdKvEnabled && result.ssdKvPath.empty())
+    throw UsageError("--ssd-kv on requires --ssd-kv-path PATH");
   result.modelRoot = requireModelRoot(argv[2]);
   result.model = model::inspectModelRoot(result.modelRoot);
   result.maxContext = parseMaxContext(argv[3], result.model.capabilities);

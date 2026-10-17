@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <sstream>
 #include <utility>
 
@@ -301,6 +302,39 @@ std::unique_ptr<RuntimeBootstrap> RuntimeBootstrap::start(
       (config.resources.model.hasVision() && !config.resources.visionTextOnly)
           ? config.resources.maximumImagePatches
           : 0;
+  
+  // Validate SSD KV cache path if enabled.
+  if (config.resources.ssdKvEnabled) {
+    std::error_code ec;
+    const std::filesystem::path ssdPath(config.resources.ssdKvPath);
+    
+    if (!std::filesystem::exists(ssdPath, ec) || ec) {
+      fail(std::move(base), RuntimeBootstrapStage::ModelCreation,
+           "--ssd-kv-path does not exist: " + config.resources.ssdKvPath);
+    }
+    
+    if (!std::filesystem::is_directory(ssdPath, ec) || ec) {
+      fail(std::move(base), RuntimeBootstrapStage::ModelCreation,
+           "--ssd-kv-path is not a directory: " + config.resources.ssdKvPath);
+    }
+    
+    // Check writability by attempting to create a test file.
+    const std::filesystem::path testFile = ssdPath / ".splash_ssd_kv_test";
+    std::ofstream test(testFile);
+    if (!test.is_open()) {
+      fail(std::move(base), RuntimeBootstrapStage::ModelCreation,
+           "--ssd-kv-path is not writable: " + config.resources.ssdKvPath);
+    }
+    test.close();
+    std::filesystem::remove(testFile, ec);
+    
+    // Check available space (minimum 15GB for 1M context at bf16).
+    const auto spaceInfo = std::filesystem::space(ssdPath, ec);
+    if (!ec && spaceInfo.available < 15ULL * 1024 * 1024 * 1024) {
+      logLine("Warning: SSD KV path has only ", spaceInfo.available / (1024 * 1024 * 1024),
+              "GB available. At least 15GB recommended for 1M+ token contexts.");
+    }
+  }
 
   std::unique_ptr<model::RuntimeModel> modelRuntime;
   try {
@@ -345,6 +379,11 @@ std::unique_ptr<RuntimeBootstrap> RuntimeBootstrap::start(
     // one reaches the split through config.resources.aneFfn.lazyAllocation,
     // and the vision one is handled at model load, where the tower is skipped.
     config.nativeLoop.engine.kvDefragmentation = config.resources.kvDefragmentation;
+    
+    // SSD-backed extended KV cache tier configuration.
+    config.nativeLoop.engine.ssdKvEnabled = config.resources.ssdKvEnabled;
+    config.nativeLoop.engine.ssdKvPath = config.resources.ssdKvPath;
+    config.nativeLoop.engine.hotTierTokens = config.resources.hotTierTokens;
     
     config.nativeLoop.weights = &resources->releasableMemory();
     config.nativeLoop.weightAdmission = resources->memoryGovernor().allocationAdmission();

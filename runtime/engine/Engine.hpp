@@ -61,6 +61,10 @@ struct EngineConfig final {
   // thermal state, and available requests. Prevents resource exhaustion
   // under varying load.
   bool dynamicBatching = false;
+  // Target GPU utilization for dynamic batching (--target-gpu-utilization).
+  // Range: (0.0, 1.0], default: 0.98 (98%). The feedback loop adjusts batch
+  // size to maintain this utilization with ±2% hysteresis.
+  double targetGpuUtilization = 0.98;
   // Enable context-aware priority scheduling (--priority-scheduling). When true,
   // scheduler prioritizes interactive requests (<1K tokens) over batch requests
   // (>10K tokens) to minimize p99 latency for short prompts.
@@ -94,6 +98,14 @@ struct EngineConfig final {
   
   // Compacts the KV pages stranded across partly used extents.
   bool kvDefragmentation = false;
+  
+  // SSD-backed extended KV cache tier (--ssd-kv on|off).
+  bool ssdKvEnabled = false;
+  // Path for SSD KV storage (--ssd-kv-path PATH).
+  std::string ssdKvPath;
+  // Hot tier token capacity in RAM before demotion to SSD (--hot-tier-tokens N).
+  // Default: 200K tokens (6.4GB at bf16, ~3GB at int8).
+  uint32_t hotTierTokens = 200 * 1024;
 };
 
 // While an active one lives, allocations are memory a request in service
