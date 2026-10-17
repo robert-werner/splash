@@ -250,6 +250,7 @@ ENGINE_CPP_SOURCES := \
 	runtime/ops/Sampling.cpp \
 	runtime/ops/Vision.cpp \
 	runtime/metal/DeviceCapabilities.cpp \
+	runtime/metal/PipelineWarming.cpp \
 	runtime/engine/MemoryPlan.cpp \
 	runtime/engine/AneFfnStartup.cpp \
 	runtime/engine/AneFfnPersistentCache.cpp \
@@ -266,6 +267,7 @@ ENGINE_CPP_SOURCES := \
 	runtime/engine/KvPool.cpp \
 	runtime/engine/KvCache.cpp \
 	runtime/engine/KvPageTier.cpp \
+	runtime/engine/AsyncKvSwap.cpp \
 	runtime/engine/ExtendedKvTier.cpp \
 	runtime/engine/CacheDirectory.cpp \
 	runtime/engine/DiskSpace.cpp \
@@ -294,9 +296,10 @@ ENGINE_CPP_SOURCES := \
 	runtime/model/VisionLoader.cpp \
 	runtime/model/QwenTarget.cpp \
 	runtime/model/QwenTargetLoader.cpp \
-	runtime/model/DFlashDraft.cpp \
-	runtime/model/ModelFactory.cpp \
-	runtime/model/SlotFile.cpp \
+		runtime/model/DFlashDraft.cpp \
+		runtime/model/ModelFactory.cpp \
+		runtime/model/HybridQuantization.cpp \
+		runtime/model/SlotFile.cpp \
 	runtime/model/QwenState.cpp \
 	runtime/model/Runtime.cpp \
 	runtime/model/RuntimeArenas.cpp
