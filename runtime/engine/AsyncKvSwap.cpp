@@ -384,4 +384,19 @@ std::filesystem::path AsyncKvSwap::swapFilePath(uint32_t pageId) const {
   return config_.swapDir / ("page_" + std::to_string(pageId) + ".swap");
 }
 
+AsyncKvSwap::SwapMetrics AsyncKvSwap::snapshotMetrics() const noexcept {
+  SwapMetrics snapshot;
+  snapshot.swapOutCount = metrics_.swapOutCount.load();
+  snapshot.swapInCount = metrics_.swapInCount.load();
+  snapshot.prefetchHitCount = metrics_.prefetchHitCount.load();
+  snapshot.prefetchMissCount = metrics_.prefetchMissCount.load();
+  snapshot.bytesSwappedOut = metrics_.bytesSwappedOut.load();
+  snapshot.bytesSwappedIn = metrics_.bytesSwappedIn.load();
+  snapshot.totalSwapOutLatencyMs = metrics_.totalSwapOutLatencyMs.load();
+  snapshot.totalSwapInLatencyMs = metrics_.totalSwapInLatencyMs.load();
+  snapshot.currentRamUsageBytes = metrics_.currentRamUsageBytes.load();
+  snapshot.currentSwapUsageBytes = metrics_.currentSwapUsageBytes.load();
+  return snapshot;
+}
+
 } // namespace splash::engine
