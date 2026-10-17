@@ -259,6 +259,7 @@ struct Runtime::Impl {
     uint32_t draftDepth = kDraftProposalTokens;
     uint32_t totalProposals = 0;
     uint32_t totalAccepted = 0;
+    float speculationThreshold = 0.25f;  // Default targets 25-30% acceptance
     // While the request thinks under a budget (ModelRequest::thinkingBudget),
     // that budget with the thinking tokens it may still select and, once
     // they ran out, the tokens of its end it selected; none once thinking

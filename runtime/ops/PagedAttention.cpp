@@ -229,7 +229,7 @@ VerifyAttentionPlan PagedAttention::verifyPlan(
   }
   return {lanes, laneSplits, splits,
           verifyWorkspaceBound(lanes, queryHeads, layout),
-          verifySplitPipeline(kernel, layout.format, false),
+          verifySplitPipeline(kernel, layout.format),
           pipeline(kernel, "verify_attention_reduce",
                    "verify_attention_reduce_kv2_g8"),
           {layout.kvHeads, splits, lanes},
