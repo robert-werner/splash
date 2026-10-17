@@ -4,6 +4,7 @@
 #include "StderrLine.hpp"
 #include "engine/DiskLabels.hpp"
 #include "engine/Engine.hpp"
+#include "engine/ExtendedKvTier.hpp"
 #include "metal/abi/ExecutionGeometry.h"
 #include "model/WeightStore.hpp"
 #include "ops/AneFfnMeasurement.hpp"
@@ -306,7 +307,7 @@ RuntimeResources::RuntimeResources(
     std::unique_ptr<MemoryGovernor> memoryGovernor,
     std::unique_ptr<kv::PageStorage> kvPages,
     std::unique_ptr<model::QwenStateStorage> stateStorage,
-    std::unique_ptr<KvPageTier> kvTier, std::unique_ptr<DiskSpace> diskSpace,
+    std::unique_ptr<KvTier> kvTier, std::unique_ptr<DiskSpace> diskSpace,
     std::unique_ptr<KvPool> kvPool, std::unique_ptr<engine::Cache> cache,
     std::unique_ptr<ops::AneFfn> aneFfn, AneFfnOutcome aneFfnOutcome)
     : persistentCache_(std::move(persistentCache)),
@@ -685,7 +686,7 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
     auto stateStorage = std::make_unique<model::QwenStateStorage>(
         *backend, memoryGovernor->allocationAdmission(), loaded.stateLayout(config.stateFormat),
         stateFile);
-    std::unique_ptr<KvPageTier> kvTier;
+    std::unique_ptr<KvTier> kvTier;
     std::unique_ptr<DiskSpace> diskSpace;
     if (diskBudget) {
       const uint64_t slotBytes = model::SlotFile::slotBytesFor(kvPages->bytesPerPage());
@@ -693,7 +694,32 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
       try {
         if (!kvFile)
           kvFile = std::make_shared<model::SlotFile>(slotBytes, diskBudget);
-        kvTier = std::make_unique<KvPageTier>(*kvPages, kvFile);
+        
+        // Conditionally create ExtendedKvTier (hot+cold SSD architecture) or standard KvPageTier.
+        if (config.engine.ssdKvEnabled) {
+          const std::filesystem::path ssdPath(config.engine.ssdKvPath);
+          const std::filesystem::path hotSlots = ssdPath / "kv_hot_slots.bin";
+          const std::filesystem::path hotRecords = ssdPath / "kv_hot_records.bin";
+          const std::filesystem::path coldSlots = ssdPath / "kv_cold_slots.bin";
+          const std::filesystem::path coldRecords = ssdPath / "kv_cold_records.bin";
+          
+          model::SlotFile::Persistence hotPersist{hotSlots, hotRecords, {}, 0};
+          model::SlotFile::Persistence coldPersist{coldSlots, coldRecords, {}, 0};
+          
+          auto hotFile = std::make_shared<model::SlotFile>(slotBytes, diskBudget, hotPersist);
+          auto coldFile = std::make_shared<model::SlotFile>(slotBytes, diskBudget, coldPersist);
+          
+          ExtendedKvTier::Config extConfig;
+          extConfig.coldTierPath = config.engine.ssdKvPath;
+          extConfig.hotTierTokens = config.engine.hotTierTokens;
+          extConfig.maxExtendedTokens = 1024 * 1024;
+          extConfig.prefetchPages = 16;
+          extConfig.compressCold = false;
+          
+          kvTier = std::make_unique<ExtendedKvTier>(*kvPages, hotFile, coldFile, extConfig);
+        } else {
+          kvTier = std::make_unique<KvPageTier>(*kvPages, kvFile);
+        }
       } catch (const std::exception &error) {
         // The persistent files are open by now; without the tier nothing
         // would keep or replace their copies.

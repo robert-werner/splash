@@ -155,6 +155,11 @@ struct RuntimeResourcesConfig {
   bool recalibrateAne = false;
   bool lazyDraftLoading = false;
   
+  // SSD-backed KV cache extension for 1M+ token contexts.
+  bool ssdKvEnabled = false;
+  std::string ssdKvPath;
+  uint32_t hotTierTokens = 200 * 1024; // 200K tokens
+  
   EngineConfig engine;
 };
 
@@ -276,7 +281,7 @@ private:
                    std::unique_ptr<MemoryGovernor> memoryGovernor,
                    std::unique_ptr<kv::PageStorage> kvPages,
                    std::unique_ptr<model::QwenStateStorage> stateStorage,
-                   std::unique_ptr<KvPageTier> kvTier,
+                   std::unique_ptr<KvTier> kvTier,
                    std::unique_ptr<DiskSpace> diskSpace,
                    std::unique_ptr<KvPool> kvPool,
                    std::unique_ptr<engine::Cache> cache,
@@ -295,7 +300,7 @@ private:
   std::unique_ptr<MemoryGovernor> memoryGovernor_;
   std::unique_ptr<kv::PageStorage> kvPages_;
   std::unique_ptr<model::QwenStateStorage> stateStorage_;
-  std::unique_ptr<KvPageTier> kvTier_;
+  std::unique_ptr<KvTier> kvTier_;
   // What the cache measures the disk tier's volume with (Cache::keepDiskLimit).
   std::unique_ptr<DiskSpace> diskSpace_;
   std::unique_ptr<KvPool> kvPool_;

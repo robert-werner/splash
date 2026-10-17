@@ -6,6 +6,10 @@
 #include <memory>
 #include <vector>
 
+namespace splash::model {
+struct SlotRecord;
+}
+
 namespace splash::engine {
 
 // One slot of the disk tier holding a KV page; releasing the last handle
@@ -63,6 +67,9 @@ public:
           std::function<void()> completion) = 0;
   // Engine-thread bookkeeping after IO completes.
   virtual void poll() = 0;
+  // Takes back a slot an earlier process recorded in a persistent tier's
+  // file; only KvPageTier and ExtendedKvTier implement it.
+  [[nodiscard]] virtual std::shared_ptr<KvDiskSlot> adopt(const model::SlotRecord &record) = 0;
 };
 
 } // namespace splash::engine

@@ -143,8 +143,7 @@ ExtendedKvTier::restore(std::shared_ptr<KvDiskSlot> slot, uint32_t page,
 }
 
 void ExtendedKvTier::poll() {
-  hotFile_->poll();
-  if (coldFile_) coldFile_->poll();
+  // SlotFile does not expose poll(), IO is handled internally
   
   for (size_t index = 0; index < inFlight_.size();) {
     if (!inFlight_[index]->io->ready()) {
@@ -188,6 +187,7 @@ bool ExtendedKvTier::demoteToCold(const std::shared_ptr<KvDiskSlot> &slot) {
 }
 
 void ExtendedKvTier::recordAccess(uint64_t blockId, uint32_t page) {
+  (void)page;  // Reserved for future per-page tracking
   accessHistory_.push_back(blockId);
   lastAccess_[blockId] = accessCounter_++;
   if (accessHistory_.size() > 1000) {

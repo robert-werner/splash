@@ -262,6 +262,7 @@ ENGINE_CPP_SOURCES := \
 	runtime/engine/KvPool.cpp \
 	runtime/engine/KvCache.cpp \
 	runtime/engine/KvPageTier.cpp \
+	runtime/engine/ExtendedKvTier.cpp \
 	runtime/engine/CacheDirectory.cpp \
 	runtime/engine/DiskSpace.cpp \
 	runtime/engine/StateCache.cpp \

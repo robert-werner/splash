@@ -39,7 +39,7 @@ public:
   void label(const std::shared_ptr<KvDiskSlot> &slot, std::vector<std::byte> label) override;
   // Takes back a slot an earlier process recorded in a persistent tier's
   // file (model::SlotFile::adopt).
-  [[nodiscard]] std::shared_ptr<KvDiskSlot> adopt(const model::SlotRecord &record);
+  [[nodiscard]] std::shared_ptr<KvDiskSlot> adopt(const model::SlotRecord &record) override;
   [[nodiscard]] bool canDemote() const noexcept override;
   [[nodiscard]] bool canRestore() const noexcept override;
   [[nodiscard]] std::shared_ptr<KvDiskSlot> acquireSlot() override;
