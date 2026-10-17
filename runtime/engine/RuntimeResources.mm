@@ -462,7 +462,7 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
   model::LoadedModel loaded;
   try {
     const auto started = AwakeClock::now();
-    loaded = model::loadModel(*backend, config.modelRoot, config.model, config.visionTextOnly);
+    loaded = model::loadModel(*backend, config.modelRoot, config.model, config.visionTextOnly, config.lazyDraftLoading);
     loaded.visionSkipped = config.visionTextOnly && loaded.descriptor.hasVision();
     requireLoadedModel(loaded);
     const std::chrono::duration<double> loading = AwakeClock::now() - started;

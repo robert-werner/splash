@@ -107,9 +107,10 @@ void requireCompatibleModel(const LoadedModel &model);
 // is one shared engine and DFlash controller; only model execution differs.
 [[nodiscard]] LoadedModel
 loadModel(metal::MetalBackend &backend,
-                 const std::filesystem::path &root,
-                 const ModelDescriptor &descriptor,
-                 bool textOnly = false);
+          const std::filesystem::path &root,
+          const ModelDescriptor &descriptor,
+          bool textOnly = false,
+          bool lazyDraft = false);
 
 // The FFN layers of a dense target, which the prefill FFN's Neural Engine
 // split (ops::AneFfn) may take; none for another target.

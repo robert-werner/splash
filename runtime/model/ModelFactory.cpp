@@ -63,7 +63,8 @@ uint64_t imageBytes(const std::vector<gguf::Image> &images) {
 LoadedModel loadModel(metal::MetalBackend &backend,
                               const std::filesystem::path &root,
                               const ModelDescriptor &descriptor,
-                              bool textOnly) {
+                              bool textOnly,
+                              bool lazyDraft) {
   LoadedModel result;
   result.descriptor = descriptor;
   if (!result.descriptor.valid())
@@ -90,7 +91,10 @@ LoadedModel loadModel(metal::MetalBackend &backend,
         throw std::invalid_argument("unknown target source");
       },
       result.descriptor.target);
-  result.draft = loadDFlashDraftWeights(backend, draft, result.descriptor.draft);
+  // --lazy-draft-loading: skip draft weights, leave memory for KV cache.
+  if (!lazyDraft) {
+    result.draft = loadDFlashDraftWeights(backend, draft, result.descriptor.draft);
+  }
   result.vision = loadVisionWeights(backend, images, vision.get(), textOnly);
   result.visionSkipped = textOnly && result.descriptor.hasVision();
 
