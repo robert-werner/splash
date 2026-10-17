@@ -92,6 +92,13 @@ uint32_t parseContinuousAttentionThreshold(std::string_view value) {
   return result;
 }
 
+double parseTargetGpuUtilization(std::string_view value) {
+  double result = 0.0;
+  if (!parseFinite(value, result) || result <= 0.0 || result > 1.0)
+    throw UsageError("--target-gpu-utilization requires a number in (0.0, 1.0]");
+  return result;
+}
+
 std::filesystem::path requireModelRoot(std::string_view argument) {
   std::error_code error;
   const std::filesystem::path root =
@@ -137,6 +144,12 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
         throw UsageError("--state-format requires fp32 or bf16");
       result.stateFormat =
           value == "fp32" ? ops::GdnStateFormat::Float32 : ops::GdnStateFormat::BFloat16;
+    } else if (option == "--draft-format") {
+      if (value != "int4" && value != "fp32")
+        throw UsageError("--draft-format requires int4 or fp32");
+      result.draftFormat =
+          value == "int4" ? NativeArguments::DraftFormat::Int4 
+                          : NativeArguments::DraftFormat::Float32;
     } else if (option == "--decode-share") {
       result.decodeShare = parseDecodeShare(value);
     } else if (option == "--max-image-patches") {
@@ -206,6 +219,8 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       result.preemptThreshold = threshold;
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
+    } else if (option == "--target-gpu-utilization") {
+      result.targetGpuUtilization = parseTargetGpuUtilization(value);
     } else {
       throw UsageError("unexpected argument " + std::string(option));
     }

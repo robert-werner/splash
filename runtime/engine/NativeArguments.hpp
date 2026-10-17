@@ -42,6 +42,9 @@ struct NativeArguments final {
   std::filesystem::path cacheRoot;
   kv::Format kvFormat = kv::Format::Int8;
   ops::GdnStateFormat stateFormat = ops::GdnStateFormat::Float32;
+  // --draft-format int4|fp32: draft model quantization format.
+  enum class DraftFormat : uint8_t { Float32, Int4 };
+  DraftFormat draftFormat = DraftFormat::Float32;
   double decodeShare = EngineConfig{}.decodeShare;
   // --max-batch-size N: maximum concurrent decode lanes (1-16).
   uint32_t maxBatchSize = EngineConfig{}.maxBatchSize;
@@ -74,6 +77,9 @@ struct NativeArguments final {
   bool recalibrateAne = false;
   // --lazy-draft-loading: defer draft model load until first request.
   bool lazyDraftLoading = false;
+  
+  // --target-gpu-utilization: target GPU utilization for dynamic batching (0.0, 1.0].
+  double targetGpuUtilization = 0.98;
 };
 
 // Reads `serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto

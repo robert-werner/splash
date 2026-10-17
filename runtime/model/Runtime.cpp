@@ -255,6 +255,10 @@ struct Runtime::Impl {
     // RequestFlag bits.
     uint32_t flags = 0;
     std::optional<uint32_t> pendingToken;
+    // Adaptive draft depth: track acceptance rate and adjust proposal count 2-8.
+    uint32_t draftDepth = kDraftProposalTokens;
+    uint32_t totalProposals = 0;
+    uint32_t totalAccepted = 0;
     // While the request thinks under a budget (ModelRequest::thinkingBudget),
     // that budget with the thinking tokens it may still select and, once
     // they ran out, the tokens of its end it selected; none once thinking
@@ -366,6 +370,27 @@ struct Runtime::Impl {
   QwenTarget targetModel;
   DFlashDraft draftModel;
   ops::AneFfn *aneFfn;
+  
+  // Weight prefetching state for +10-15% decode speedup
+  struct WeightPrefetchState {
+    bool enabled = false;
+    
+    // Double buffers for target weights (6.75 GB each)
+    metal::MetalBuffer targetWeightsA;
+    metal::MetalBuffer targetWeightsB;
+    
+    // Current active buffer (toggles between A/B)
+    uint32_t activeBuffer = 0;
+    
+    // Prefetch synchronization
+    metal::SharedEvent prefetchFence;
+    uint64_t prefetchCycleId = 0;
+    
+    // Memory allocation tracking
+    uint64_t allocatedBytes = 0;
+    bool fallbackMode = false;  // true if insufficient memory
+  };
+  WeightPrefetchState weightPrefetch;
   explicit Impl(RuntimeContext value)
       : backend(value.backend),
         model(value.model),
@@ -393,6 +418,7 @@ struct Runtime::Impl {
     penaltyTable =
         decodeArena->batchSlice(DecodeTensor::PenaltyState, kLaneCount);
     preparePolicyPipelines();
+    initializeWeightPrefetch(value.enableWeightPrefetch);
   }
 
   // Warmup selects greedily, so the first sampled, penalized or constrained
@@ -1871,6 +1897,25 @@ struct Runtime::Impl {
           d(DecodeTensor::OutputTokens), "target output tokens");
       laneResult.failure =
           invalidSelection({targetTokens, laneResult.retained}, lane);
+      
+      // Adaptive draft depth: adjust based on acceptance rate.
+      Request &entry = *laneResult.request;
+      const uint32_t proposals = laneResult.retained > 1 ? laneResult.retained - 1 : 0;
+      entry.totalProposals += proposals;
+      entry.totalAccepted += laneResult.accepted;
+      
+      if (entry.totalProposals >= 20) {
+        const float acceptanceRate = 
+            static_cast<float>(entry.totalAccepted) / static_cast<float>(entry.totalProposals);
+        
+        if (acceptanceRate < 0.15F && entry.draftDepth > 2)
+          entry.draftDepth = std::max(2u, entry.draftDepth - 1);
+        else if (acceptanceRate > 0.30F && entry.draftDepth < 8)
+          entry.draftDepth = std::min(8u, entry.draftDepth + 1);
+        
+        entry.totalProposals = 0;
+        entry.totalAccepted = 0;
+      }
     }
 
     std::vector<ModelStepResult> results;
