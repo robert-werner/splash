@@ -44,4 +44,6 @@ PAGED_PREFILL_STORE(prefill_attention_q8_store, 4, int8_t)
 PAGED_PREFILL_STORE(prefill_attention_q8_store_kv2_g8, 2, int8_t)
 PAGED_PREFILL_STORE(prefill_attention_bf16_store, 4, bfloat)
 PAGED_PREFILL_STORE(prefill_attention_bf16_store_kv2_g8, 2, bfloat)
+PAGED_PREFILL_STORE(prefill_attention_q4_store, 4, int4b_format)
+PAGED_PREFILL_STORE(prefill_attention_q4_store_kv2_g8, 2, int4b_format)
 #undef PAGED_PREFILL_STORE

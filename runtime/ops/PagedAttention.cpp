@@ -84,6 +84,22 @@ std::string_view verifySplitPipeline(KernelLayout layout,
                   "verify_attention_bf16_split_kv2_g8");
 }
 
+std::string_view prefillStorePipeline(KernelLayout layout,
+                                      kv::Format format) noexcept {
+  switch (format) {
+  case kv::Format::Int4:
+    return pipeline(layout, "prefill_attention_q4_store",
+                    "prefill_attention_q4_store_kv2_g8");
+  case kv::Format::Int8:
+    return pipeline(layout, "prefill_attention_q8_store",
+                    "prefill_attention_q8_store_kv2_g8");
+  case kv::Format::BFloat16:
+    break;
+  }
+  return pipeline(layout, "prefill_attention_bf16_store",
+                  "prefill_attention_bf16_store_kv2_g8");
+}
+
 std::string_view verifyStorePipeline(KernelLayout layout,
                                      kv::Format format) noexcept {
   switch (format) {
@@ -393,9 +409,7 @@ void PagedAttention::addPrefillStore(
     metal::MetalBuffer pageTable,
     const kv::ChunkedPrefillParams &params, kv::Layout layout) {
   const KernelLayout kernel = storageKernelLayout(layout);
-  const auto store = layout.format == kv::Format::BFloat16
-      ? pipeline(kernel, "prefill_attention_bf16_store", "prefill_attention_bf16_store_kv2_g8")
-      : pipeline(kernel, "prefill_attention_q8_store", "prefill_attention_q8_store_kv2_g8");
+  const auto store = prefillStorePipeline(kernel, layout.format);
   const Staging staging{layout.kvHeads, params.chunk_stride, params.chunk_tokens};
   requireBytes(chunkKeys, staging.rowBytes(1, layout.headDimension), "attention key");
   requireBytes(chunkValues, staging.valueBytes(layout.headDimension), "attention value");
