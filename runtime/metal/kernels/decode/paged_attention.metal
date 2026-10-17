@@ -100,6 +100,10 @@ PAGED_VERIFY_SPLIT(verify_attention_q8_split_kv2_g8, 2, 8, int8_t)
 // BF16 shares the page loop and reduction, without quantization scales.
 PAGED_VERIFY_SPLIT(verify_attention_bf16_split, 4, 6, bfloat)
 PAGED_VERIFY_SPLIT(verify_attention_bf16_split_kv2_g8, 2, 8, bfloat)
+// INT4 halves the KV bytes a page holds; its values are token-major so the
+// store owns whole bytes, which the tile accounts for in its PV operand.
+PAGED_VERIFY_SPLIT(verify_attention_q4_split, 4, 6, int4b_format)
+PAGED_VERIFY_SPLIT(verify_attention_q4_split_kv2_g8, 2, 8, int4b_format)
 #undef PAGED_VERIFY_SPLIT
 #undef PAGED_VERIFY_TILE_AT
 #undef PAGED_VERIFY_SCRATCH

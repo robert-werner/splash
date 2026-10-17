@@ -90,6 +90,8 @@ PAGED_PREFILL_SPLIT(prefill_attention_q8_split_kv2_g8, 2, 8, int8_t)
 // BF16 shares the page loop and reduction, without quantization scales.
 PAGED_PREFILL_SPLIT(prefill_attention_bf16_split, 4, 6, bfloat)
 PAGED_PREFILL_SPLIT(prefill_attention_bf16_split_kv2_g8, 2, 8, bfloat)
+PAGED_PREFILL_SPLIT(prefill_attention_q4_split, 4, 6, int4b_format)
+PAGED_PREFILL_SPLIT(prefill_attention_q4_split_kv2_g8, 2, 8, int4b_format)
 #undef PAGED_PREFILL_SPLIT
 
 #define PAGED_PREFILL_REDUCE(Name, Heads, Group)                               \

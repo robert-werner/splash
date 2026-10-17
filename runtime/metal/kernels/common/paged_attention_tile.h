@@ -190,7 +190,10 @@ inline void splash_paged_attention_tile(
     threadgroup float *previous_scale, threadgroup atomic_uint *rescale,
     uint thread_index) {
   constexpr ushort M = RowsPerTile * QueryHeadsPerKVHead;
-  constexpr bool Quantized = is_same<CacheElement, int8_t>::value;
+  // INT4 carries INT8's per-(token, head) scales, so it takes the same
+  // scaled softmax path.
+  constexpr bool Quantized = is_same<CacheElement, int8_t>::value ||
+                             is_same<CacheElement, int4b_format>::value;
   constexpr ushort N = SplashKvPageTokens;
   constexpr ushort D = SplashKvHeadDimension;
   uint visible_tokens = committed_tokens + active_rows;
@@ -210,21 +213,35 @@ inline void splash_paged_attention_tile(
   auto st = tensor(scores, dextents<int, 2>{N, M}, array<int, 2>{1, N});
   auto pt = tensor(probabilities, dextents<int, 2>{N, M}, array<int, 2>{1, N});
   auto p0 = pt.slice<N, M>(0, 0);
-  auto key_type = tensor(static_cast<device CacheElement *>(nullptr),
-                         dextents<int, 2>{D, N}, array<int, 2>{1, D});
-  auto value_type = tensor(static_cast<device CacheElement *>(nullptr),
-                           dextents<int, 2>{N, D}, array<int, 2>{1, N});
+  auto key_type = splash_kv_tensor_type<CacheElement>(dextents<int, 2>{D, N},
+                                                      array<int, 2>{1, D});
+  // INT4 keeps values token-major so its store can own whole bytes, so its
+  // PV operand is {D, N} and needs no transpose; the others stay {N, D}.
+  constexpr bool TokenMajorValues = is_same<CacheElement, int4b_format>::value;
+  auto value_type = [&] {
+    if constexpr (TokenMajorValues)
+      return splash_kv_tensor_type<CacheElement>(dextents<int, 2>{D, N},
+                                                 array<int, 2>{1, D});
+    else
+      return splash_kv_tensor_type<CacheElement>(dextents<int, 2>{N, D},
+                                                 array<int, 2>{1, N});
+  }();
   const SplashKvAddressing<KVHeads, CacheElement> addressing(kv, kv_head);
   auto q0 = qt.slice<D, M>(0, 0);
   auto k0 = key_type.template slice<D, N>(0, 0);
-  auto v0 = value_type.template slice<N, D>(0, 0);
+  auto v0 = [&] {
+    if constexpr (TokenMajorValues)
+      return value_type.template slice<D, N>(0, 0);
+    else
+      return value_type.template slice<N, D>(0, 0);
+  }();
   // QK writes a complete page score tile, the softmax applies an INT8 page's
   // key scales and PV accumulates the running output.
   constexpr auto qk_descriptor =
       matmul2d_descriptor(M, N, D, false, true, false,
                           matmul2d_descriptor::mode::multiply);
   constexpr auto pv_descriptor =
-      matmul2d_descriptor(M, D, N, false, true, true,
+      matmul2d_descriptor(M, D, N, false, !TokenMajorValues, true,
                           matmul2d_descriptor::mode::multiply_accumulate);
   matmul2d<qk_descriptor, execution_simdgroups<8>> qk;
   matmul2d<pv_descriptor, execution_simdgroups<8>> pv;
@@ -244,8 +261,18 @@ inline void splash_paged_attention_tile(
     const SplashKvPageTensors<CacheElement> tensors =
         addressing.page(page_table[page]);
     uint token_start = page * N;
-    auto kt = tensor(tensors.keys, dextents<int, 2>{D, N}, array<int, 2>{1, D});
-    auto vt = tensor(tensors.values, dextents<int, 2>{N, D}, array<int, 2>{1, N});
+    auto kt = splash_kv_tensor<CacheElement>(tensors.keys, dextents<int, 2>{D, N},
+                                             array<int, 2>{1, D});
+    auto vt = [&] {
+      if constexpr (TokenMajorValues)
+        return splash_kv_tensor<CacheElement>(tensors.values,
+                                              dextents<int, 2>{D, N},
+                                              array<int, 2>{1, D});
+      else
+        return splash_kv_tensor<CacheElement>(tensors.values,
+                                              dextents<int, 2>{N, D},
+                                              array<int, 2>{1, N});
+    }();
     device const float *key_scales = tensors.key_scales;
     device const float *value_scales = tensors.value_scales;
 
@@ -273,7 +300,12 @@ inline void splash_paged_attention_tile(
         running[index] *= previous_scale[coordinates[1]];
       }
     }
-    auto vs = vt.template slice<N, D>(0, 0);
+    auto vs = [&] {
+      if constexpr (TokenMajorValues)
+        return vt.template slice<D, N>(0, 0);
+      else
+        return vt.template slice<N, D>(0, 0);
+    }();
     pv.run(p0, vs, running);
     threadgroup_barrier(mem_flags::mem_threadgroup);
   }

@@ -39,8 +39,9 @@ inline ulong splash_current_value_index(uint stride, uint head, uint token,
 }
 
 // The scratch of a store entry's scale reduction, by CacheElement: eight
-// simdgroup maxima for INT8; BF16 copies the source bits and has none.
+// simdgroup maxima for INT8 and INT4; BF16 copies the source bits and has none.
 #define SPLASH_STORE_MAXIMA_int8_t threadgroup float maxima[8];
+#define SPLASH_STORE_MAXIMA_int4b_format threadgroup float maxima[8];
 #define SPLASH_STORE_MAXIMA_bfloat threadgroup float *maxima = nullptr;
 
 // One lane per dimension stores a current row in its final page slot.
@@ -71,6 +72,48 @@ __attribute__((always_inline)) inline void splash_store_kv_row(
       slab.values[splash_kv_value_index<KVHeads>(0, 0, page_token, dimension)] = source;
     else
       slab.keys[splash_kv_key_index<KVHeads>(0, 0, page_token, dimension)] = source;
+    return;
+  } else if constexpr (is_same<CacheElement, int4b_format>::value) {
+    // INT4 quantizes to [-7, 7] about the row's maximum, the same per-(head,
+    // token) scale INT8 uses, and both tensors are token-major so a byte
+    // holds dimensions (2k, 2k+1) of one token. The even lane writes the
+    // byte, taking its neighbour's nibble over the simdgroup rather than
+    // reading back what another thread may not have written yet.
+    float value = float(source);
+    float local_maximum = simd_max(abs(value));
+    if (simd_lane == 0)
+      maxima[simd_group] = local_maximum;
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if (simd_group == 0) {
+      for (uint offset = 4; offset != 0; offset >>= 1) {
+        if (simd_lane < offset)
+          maxima[simd_lane] = max(maxima[simd_lane], maxima[simd_lane + offset]);
+        simdgroup_barrier(mem_flags::mem_threadgroup);
+      }
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    const float maximum = maxima[0];
+    const float scale = maximum == 0.0f ? 0.0f : maximum / 7.0f;
+    const int quantized =
+        maximum == 0.0f ? 0
+                        : clamp(int(rint(value * 7.0f / maximum)), -7, 7);
+    const int neighbour = simd_shuffle_down(quantized, 1);
+    if (dimension % 2 == 0) {
+      const uchar packed =
+          uchar(uint(quantized & 0xF) | (uint(neighbour & 0xF) << 4));
+      const ulong element = splash_kv_value_index_of<KVHeads, CacheElement>(
+          0, 0, page_token, dimension);
+      const ulong key_element =
+          splash_kv_key_index<KVHeads>(0, 0, page_token, dimension);
+      device uchar *base = value_tensor ? slab.values : slab.keys;
+      base[(value_tensor ? element : key_element) / 2] = packed;
+    }
+    if (dimension == 0) {
+      if (value_tensor)
+        slab.value_scales[splash_q8_scale_index<KVHeads>(0, 0, page_token)] = scale;
+      else
+        slab.key_scales[splash_q8_scale_index<KVHeads>(0, 0, page_token)] = scale;
+    }
     return;
   } else {
 

@@ -63,6 +63,24 @@ template <typename CacheElement> struct SplashKvPageTensors {
   device float *value_scales;
 };
 
+// A tensor of CacheElement over the pointer SplashKvPageTensors carries for
+// it. Deduction would read a sub-byte format's byte pointer as a tensor of
+// bytes, so the element type is named rather than deduced.
+template <typename CacheElement>
+inline auto splash_kv_tensor(typename SplashKvDataPointer<CacheElement>::type data,
+                             dextents<int, 2> extents, array<int, 2> strides) {
+  return tensor<device CacheElement, dextents<int, 2>, tensor_inline>(data, extents,
+                                                                      strides);
+}
+
+// The null tensor of CacheElement whose type names a matmul operand.
+template <typename CacheElement>
+inline auto splash_kv_tensor_type(dextents<int, 2> extents, array<int, 2> strides) {
+  return splash_kv_tensor<CacheElement>(
+      static_cast<typename SplashKvDataPointer<CacheElement>::type>(nullptr), extents,
+      strides);
+}
+
 template <uint KVHeads, typename CacheElement> struct SplashKvAddressing {
   using Bytes = SplashKvPageBytes<KVHeads, CacheElement>;
   uint layer_offset;
