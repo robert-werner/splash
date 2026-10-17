@@ -248,22 +248,12 @@ ENGINE_CPP_SOURCES := \
 	runtime/ops/RowCopy.cpp \
 	runtime/ops/Sampling.cpp \
 	runtime/ops/Vision.cpp \
-	runtime/ops/Int4KvCache.cpp \
-	runtime/ops/VisionConditional.cpp \
-	runtime/ops/KernelFusion.cpp \
-	runtime/ops/SpeculativeDecodingV2.cpp \
 	runtime/metal/DeviceCapabilities.cpp \
 	runtime/engine/MemoryPlan.cpp \
 	runtime/engine/AneFfnStartup.cpp \
 	runtime/engine/Scheduler.cpp \
 	runtime/engine/DynamicBatching.cpp \
-	runtime/engine/LazyAneAllocation.cpp \
-	runtime/engine/WriteCoalescing.cpp \
-	runtime/engine/KvDefragmentation.cpp \
 	runtime/engine/MemoryTelemetry.cpp \
-	runtime/engine/LazyAneAllocation.cpp \
-	runtime/engine/WriteCoalescing.cpp \
-	runtime/engine/KvDefragmentation.cpp \
 	runtime/engine/Cache.cpp \
 	runtime/engine/WriteBehind.cpp \
 	runtime/engine/Engine.cpp \

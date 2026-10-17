@@ -1,6 +1,5 @@
 #include "engine/Cache.hpp"
 #include "engine/Engine.hpp"
-#include "engine/KvDefragmentation.hpp"
 
 #include "AwakeClock.hpp"
 #include "engine/DiskLabels.hpp"
@@ -38,9 +37,40 @@ Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> di
     : pool_(pool), tier_(kvTier), persistent_(kvTier && kvTier->persistent()),
       diskBudget_(std::move(diskBudget)), kv_(pool, recency_),
       states_(kv_, recency_, [this](bool inUse) { return freeDiskSpace(inUse); }, persistent_),
-      kvDefragmentation_(config.kvDefragmentation ? std::make_optional<KvDefragmentation>(4096) : std::nullopt),
-      writeCoalescing_(config.writeCoalescing ? std::make_unique<WriteCoalescingBuffer>(WriteCoalescingConfig{}) : nullptr) {
-  if (kvDefragmentation_) pool_.setKvDefragmentation(&(*kvDefragmentation_));
+      defragmentation_(config.kvDefragmentation ? std::make_optional<DefragmentationPolicy>() : std::nullopt) {}
+
+CacheDefragmentation Cache::defragmentIfNeeded() {
+  // A compaction pass only pays off once free pages are stranded across
+  // extents that still hold pages: moving those pages together hands whole
+  // extents back. Below the trigger the pool releases what it can without
+  // moving anything, so a pass would copy pages for nothing.
+  if (!defragmentation_)
+    return {};
+  const DefragmentationPolicy &policy = *defragmentation_;
+  const uint32_t before = pool_.currentFragmentationRatio();
+  if (before < policy.triggerFragmentationRatio)
+    return {.fragmentationBefore = before, .fragmentationAfter = before};
+  if (pool_.freePageCount() < policy.minFreePagesForDefrag)
+    return {.fragmentationBefore = before, .fragmentationAfter = before};
+
+  const auto start = AwakeClock::now();
+  CacheDefragmentation result{.fragmentationBefore = before};
+  // compactExtent() is the Cache's own: it applies the pool's page moves to
+  // the block map and to every request's page table, which the pool cannot do
+  // for itself. Calling KvPool::compactExtent() straight from here would move
+  // pages while their readers still point at the old ones.
+  while (result.extentsCompacted < policy.maxExtentsPerPass &&
+         pool_.currentFragmentationRatio() > policy.targetFragmentationRatio) {
+    if (millisecondsSince(start) >= policy.maxDefragTimeMs)
+      break;
+    if (!compactExtent())
+      break;
+    ++result.extentsCompacted;
+    result.bytesFreed += pool_.reclaimEmptyExtents(true, 1);
+  }
+  result.fragmentationAfter = pool_.currentFragmentationRatio();
+  result.elapsedMs = millisecondsSince(start);
+  return result;
 }
 
 CacheAdoption Cache::adopt(std::vector<PersistedKv> blocks, std::vector<PersistedState> states) {
@@ -856,22 +886,6 @@ Cache::LeafReclaim Cache::demoteKv(uint64_t block) {
     ++kvTier_.demotionsRefused;
     return transfersInFlight() ? LeafReclaim::Pending : LeafReclaim::Impossible;
   }
-  
-  // WriteCoalescing hot path: buffer write metadata (actual I/O via tier_->demote)
-  if (writeCoalescing_ && persistent_) {
-    std::vector<std::byte> dummyData;
-    bool buffered = writeCoalescing_->addWrite(
-        block, 0, std::move(dummyData),
-        [this, block, slot]() mutable {
-          labelKv(block, slot);
-          kv_.setSlot(block, std::move(slot));
-          kv_.setTransferring(block, true);
-        });
-    if (buffered) {
-      return LeafReclaim::Started;
-    }
-  }
-  
   labelKv(block, slot);
   kv_.setSlot(block, std::move(slot));
   kv_.setTransferring(block, true);

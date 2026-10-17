@@ -146,14 +146,10 @@ struct RuntimeResourcesConfig {
   std::function<MemoryPressure()> memoryPressure;
   std::function<bool()> cancelled;
   
-  // Phase 2 & Phase 3 optimization flags
+  // The memory switches the command line asked for.
   bool lazyAneAllocation = false;
-  bool writeCoalescing = false;
   bool kvDefragmentation = false;
-  bool int4KvCache = false;
   bool visionTextOnly = false;
-  bool kernelFusion = false;
-  bool speculativeDecoding = false;
   
   EngineConfig engine;
 };

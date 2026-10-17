@@ -1,6 +1,4 @@
 #include "engine/KvPool.hpp"
-#include "engine/KvDefragmentation.hpp"
-#include "ops/Int4KvCache.hpp"
 #include "AwakeClock.hpp"
 
 #include <algorithm>
@@ -70,16 +68,6 @@ KvPageAcquisition KvPool::acquirePages(uint32_t count) {
     pages_[page].activeReferences = 1;
     ++activePages_;
   }
-  
-  // Phase 3: Int4 KV cache - track compression for allocated pages
-  // Note: actual quantize/dequantize happens in PageStorage write/read operations
-  if (int4Cache_ && selected.size() > 0) {
-    size_t floatCount = (selected.size() * storage_.bytesPerPage()) / sizeof(float);
-    size_t compressedSize = int4Cache_->getCompressedSize(floatCount) * sizeof(uint8_t);
-    size_t originalSize = floatCount * sizeof(float);
-    compressionSavings_ += (originalSize - compressedSize);
-  }
-  
   return {std::move(selected)};
 }
 
@@ -185,16 +173,6 @@ void KvPool::releaseExtent(uint32_t extent) {
 }
 
 KvPageMoves KvPool::compactExtent(std::span<const uint32_t> fixed) {
-  if (kvDefragmentation_) {
-    for (uint32_t extent = 0; extent < extents_.size(); ++extent) {
-      if (!extents_[extent].allocated) continue;
-      uint32_t usedPages = extents_[extent].usedPages;
-      if (usedPages > 0 && usedPages < extentPages_) {
-        float fragRatio = static_cast<float>(extentPages_ - usedPages) / extentPages_ * 100.0f;
-        if (kvDefragmentation_->shouldDefragment(fragRatio)) break;
-      }
-    }
-  }
   // Pages move only into extents that hold pages already: an empty extent is
   // released as it is, never filled to release another.
   uint32_t freeInUse = 0;
@@ -444,67 +422,22 @@ void KvPool::setExtentReclaimable(uint32_t extentIndex,
 uint32_t KvPool::currentFragmentationRatio() const noexcept {
   if (allocatedExtents_ == 0)
     return 0;
-  
+  // Fragmentation is the free pages an extent cannot release because its peers
+  // in the same extent are still held: those pages are allocated from the
+  // device and unusable as a release. Free pages that fill a whole extent are
+  // not fragmentation, since reclaimEmptyExtents() hands them back as they
+  // are, so counting them would send a compaction pass after an idle pool
+  // that has nothing to compact.
+  uint32_t strandedPages = 0;
+  for (const ExtentRecord &extent : extents_) {
+    if (!extent.allocated)
+      continue;
+    const uint32_t free = extentPages_ - extent.usedPages;
+    if (extent.usedPages != 0)
+      strandedPages += free;
+  }
   const uint32_t totalPages = allocatedExtents_ * extentPages_;
-  const uint32_t usedPages = activePages_ + prefixPages_;
-  
-  if (totalPages <= usedPages)
-    return 0;
-  
-  return ((totalPages - usedPages) * 100) / totalPages;
-}
-
-void KvPool::defragmentIfNeeded(const DefragmentationPolicy &policy,
-                                 DefragmentationResult &result) {
-  const auto start = AwakeClock::now();
-  
-  result = {};
-  result.fragmentationBefore = currentFragmentationRatio();
-  
-  // Don't defragment if fragmentation is below trigger threshold
-  if (result.fragmentationBefore < policy.triggerFragmentationRatio) {
-    return;
-  }
-  
-  // Don't defragment if we don't have enough free pages
-  if (freePages_ < policy.minFreePagesForDefrag) {
-    return;
-  }
-  
-  // Compact extents until fragmentation target is met or limits reached
-  uint32_t compacted = 0;
-  uint32_t fragmentation = result.fragmentationBefore;
-  
-  while (fragmentation > policy.targetFragmentationRatio && 
-         compacted < policy.maxExtentsPerPass) {
-    
-    // Check time limit
-    const double elapsed = millisecondsSince(start);
-    if (elapsed >= policy.maxDefragTimeMs) {
-      break;
-    }
-    
-    // Try to compact one extent
-    KvPageMoves moves = compactExtent({});
-    if (moves.empty()) {
-      // No more extents can be compacted
-      break;
-    }
-    
-    compacted++;
-    result.pagesMoved += static_cast<uint32_t>(moves.destinations.size());
-    
-    // Recalculate fragmentation
-    fragmentation = currentFragmentationRatio();
-  }
-  
-  result.extentsCompacted = compacted;
-  result.fragmentationAfter = fragmentation;
-  result.elapsedMs = millisecondsSince(start);
-  
-  // Release empty extents that resulted from defragmentation
-  const uint64_t freedBytes = reclaimEmptyExtents(false, compacted);
-  result.bytesFreed = freedBytes;
+  return (strandedPages * 100) / totalPages;
 }
 
 } // namespace splash::engine

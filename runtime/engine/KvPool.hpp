@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ops/PagedKv.hpp"
-#include "engine/KvDefragmentation.hpp"
 
 #include <cstdint>
 #include <limits>
@@ -13,7 +12,6 @@ class KvDefragmentation;
 }
 
 namespace splash::ops {
-class Int4KvCache;
 }
 
 namespace splash::engine {
@@ -112,7 +110,6 @@ public:
     return allocatedExtents_ * extentPages_ - activePages_;
   }
   
-  void setKvDefragmentation(engine::KvDefragmentation* defrag) { kvDefragmentation_ = defrag; }
 
   // Releases completely unreferenced extents, at most `limit` of them, and
   // returns the bytes released. keepRunway keeps one empty extent warm, so
@@ -128,15 +125,11 @@ public:
   // the extent. An extent that holds a page of `fixed` is not emptied.
   [[nodiscard]] KvPageMoves compactExtent(std::span<const uint32_t> fixed);
   
-  // Proactively defragment KV pool under memory pressure to reduce waste.
-  // Compacts extents until fragmentation falls below target or time limit.
-  // Returns statistics about the defragmentation pass.
+  // The free pages stranded in extents that still hold pages, as a percentage
+  // of the pool's allocated pages. Free pages filling a whole extent are not
+  // counted: reclaimEmptyExtents() releases those without moving anything.
   [[nodiscard]] uint32_t currentFragmentationRatio() const noexcept;
-  void defragmentIfNeeded(const struct DefragmentationPolicy &policy,
-                          struct DefragmentationResult &result);
-  
-  void setInt4Cache(ops::Int4KvCache* cache) { int4Cache_ = cache; }
-  size_t compressionSavings() const noexcept { return compressionSavings_; }
+
   
   [[nodiscard]] KvPoolSnapshot snapshot() const;
 
@@ -209,9 +202,6 @@ private:
   uint32_t prefixPages_ = 0;
   uint32_t allocatedExtents_ = 0;
   
-  size_t compressionSavings_ = 0;
-  ops::Int4KvCache* int4Cache_ = nullptr;
-  engine::KvDefragmentation* kvDefragmentation_ = nullptr;
 };
 
 } // namespace splash::engine

@@ -61,22 +61,9 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
                EngineEventSink &events)
     : config_(config), cache_(cache), writeBehind_(cache), model_(model),
       events_(events), scheduler_(config_.decodeShare, config_.maxBatchSize),
-      dynamicBatching_(config_.dynamicBatching 
+      dynamicBatching_(config_.dynamicBatching
                        ? std::make_optional<DynamicBatching>(config_.maxBatchSize)
-                       : std::nullopt),
-      int4Cache_(config_.int4Cache),
-      visionConditional_(config_.visionConditional),
-      kernelFusion_(config_.kernelFusion),
-      speculativeDecoding_(config_.speculativeDecoding),
-      lazyAneAllocation_(config_.lazyAneAllocation 
-                         ? std::make_optional<LazyAneAllocator>(LazyAnePolicy{})
-                         : std::nullopt),
-      writeCoalescing_(config_.writeCoalescing 
-                       ? std::make_optional<WriteCoalescingBuffer>(WriteCoalescingConfig{})
-                       : std::nullopt),
-      kvDefragmentation_(config_.kvDefragmentation 
-                         ? std::make_optional<KvDefragmentation>(4096)
-                         : std::nullopt) {
+                       : std::nullopt) {
   if (!config_.maxContext || !config_.vocabularySize) {
     throw std::invalid_argument("context and vocabulary sizes must be positive");
   }
@@ -88,11 +75,6 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
     throw std::invalid_argument("max batch size must be between 1 and 16");
   if (config_.continuousPrefillThreshold > config_.maxContext)
     throw std::invalid_argument("continuous prefill threshold cannot exceed max context");
-  
-  // Wire Int4Cache to KvPools
-  if (int4Cache_) {
-    // KvPools will be initialized later, wire in constructor extension or during first use
-  }
 }
 
 void Engine::submit(EngineRequest value) {
@@ -2016,15 +1998,12 @@ void Engine::apply(const BatchPlan &plan, std::span<const std::vector<Capture>> 
     scheduler_.setMaxBatchSize(newMaxBatchSize);
   }
   
-  // Phase 3: Speculative Decoding V2 - draft-verify loop
-  if (speculativeDecoding_) {
-    const uint32_t maxDraft = speculativeDecoding_->getMaxDraftTokens();
-    for (uint32_t i = 0; i < maxDraft && acceptedDraftTokens > 0 && draftedTokens > 0; ++i) {
-      float acceptanceRate = static_cast<float>(acceptedDraftTokens) / static_cast<float>(draftedTokens);
-      if (!speculativeDecoding_->shouldAcceptDraft(acceptanceRate)) break;
-    }
-  }
-  
+  // A batch that freed pages may have left them stranded across partly used
+  // extents; the pass hands whole extents back, and its compactions show up
+  // in splash_kv_extent_compactions_total. It returns at once unless
+  // --kv-defragmentation is on and the pool has passed the policy's trigger.
+  (void)cache_.defragmentIfNeeded();
+
   events_.batchCompleted(plan.kind, plan.width(), inputTokens, outputTokens,
                          draftedTokens, acceptedDraftTokens, wallMilliseconds,
                          cycleMilliseconds);

@@ -4,7 +4,6 @@
 #include "engine/KvPool.hpp"
 #include "engine/KvTier.hpp"
 #include "engine/StateCache.hpp"
-#include "engine/WriteCoalescing.hpp"
 #include "model/Model.hpp"
 #include "model/SlotFile.hpp"
 
@@ -121,6 +120,27 @@ struct CacheAdoption final {
   // Records left behind, damaged, incomplete or of no state, and copies
   // given up for the quota.
   uint32_t dropped = 0;
+};
+
+// What a compaction pass is allowed to do, and when it is worth starting.
+struct DefragmentationPolicy final {
+  // The stranded-page percentage at which a pass starts, and the one it
+  // stops at: compaction copies pages, so it runs on real stranding only.
+  uint32_t triggerFragmentationRatio = 40;
+  uint32_t targetFragmentationRatio = 20;
+  // A pass shares the engine thread with the batch that follows it.
+  double maxDefragTimeMs = 50.0;
+  uint32_t maxExtentsPerPass = 10;
+  // Fewer free pages than this cannot cover an extent worth emptying.
+  uint32_t minFreePagesForDefrag = 64;
+};
+
+struct CacheDefragmentation final {
+  uint32_t extentsCompacted = 0;
+  uint32_t fragmentationBefore = 0;
+  uint32_t fragmentationAfter = 0;
+  double elapsedMs = 0.0;
+  uint64_t bytesFreed = 0;
 };
 
 struct CacheSnapshot final {
@@ -253,6 +273,11 @@ public:
   Cache &operator=(const Cache &) = delete;
 
   [[nodiscard]] bool persistent() const noexcept { return persistent_; }
+  // Hands whole extents back by moving the pages stranded across partly used
+  // ones together, when --kv-defragmentation is on and the pool's
+  // fragmentation has passed the policy's trigger. Does nothing otherwise, so
+  // the engine can call it on every batch.
+  CacheDefragmentation defragmentIfNeeded();
   // Before the first request, takes back the restore points an earlier
   // process left in a persistent tier: each state whose block's chain is
   // whole, and that chain. Everything else stays behind, and once the files
@@ -708,8 +733,7 @@ private:
   CacheLookupSnapshot lookup_;
   double extentCompactMaxMilliseconds_ = 0.0;
   std::function<void()> completionNotifier_;
-  std::optional<KvDefragmentation> kvDefragmentation_;
-  std::unique_ptr<WriteCoalescingBuffer> writeCoalescing_;
+  std::optional<DefragmentationPolicy> defragmentation_;
 };
 
 } // namespace splash::engine

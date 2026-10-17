@@ -659,16 +659,7 @@ SERVE_OPTIONS = (
         dict(
             action="store_true",
             default=False,
-            help="defer ANE buffer allocation until first FFN use (+5-7K tokens)",
-        ),
-    ),
-    ServeOption(
-        "--write-coalescing",
-        "cache",
-        dict(
-            action="store_true",
-            default=False,
-            help="buffer SSD writes to reduce wear (-50%% write volume)",
+            help="defer the ANE FFN split until the first request asks for context",
         ),
     ),
     ServeOption(
@@ -677,16 +668,7 @@ SERVE_OPTIONS = (
         dict(
             action="store_true",
             default=False,
-            help="proactively compact fragmented KV pages (+3-5K tokens)",
-        ),
-    ),
-    ServeOption(
-        "--int4-kv-cache",
-        "memory",
-        dict(
-            action="store_true",
-            default=False,
-            help="enable INT4 KV cache quantization (2× compression, slight accuracy loss)",
+            help="compact KV pages stranded across partly used extents, to release whole extents",
         ),
     ),
     ServeOption(
@@ -695,25 +677,7 @@ SERVE_OPTIONS = (
         dict(
             action="store_true",
             default=False,
-            help="skip vision layer loading for text-only workloads (+30K tokens)",
-        ),
-    ),
-    ServeOption(
-        "--kernel-fusion",
-        "performance",
-        dict(
-            action="store_true",
-            default=False,
-            help="enable Metal kernel fusion (RMSNorm+Linear, RoPE+Attention; +15%% throughput)",
-        ),
-    ),
-    ServeOption(
-        "--speculative-decoding",
-        "performance",
-        dict(
-            action="store_true",
-            default=False,
-            help="enable speculative decoding v2 (draft-verify; +75%% throughput)",
+            help="skip the vision tower on a text-only workload, leaving its memory to the KV cache",
         ),
     ),
 )

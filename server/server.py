@@ -1691,16 +1691,12 @@ def _native_command(args, relaunch_context=None):
         )
     if args.allow_idle_sleep:
         command.extend(("--idle-sleep", "allow"))
-    # Phase 2 & Phase 3 optimization switches: the engine takes each as
-    # on|off, and none is passed when off so the default holds.
+    # Memory switches the engine takes as on|off; none is passed when off so
+    # the engine's default holds.
     for name, enabled in (
         ("--lazy-ane-allocation", args.lazy_ane_allocation),
-        ("--write-coalescing", args.write_coalescing),
         ("--kv-defragmentation", args.kv_defragmentation),
-        ("--int4-kv-cache", args.int4_kv_cache),
         ("--vision-text-only", args.vision_text_only),
-        ("--kernel-fusion", args.kernel_fusion),
-        ("--speculative-decoding", args.speculative_decoding),
     ):
         if enabled:
             command.extend((name, "on"))

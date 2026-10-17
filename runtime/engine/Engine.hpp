@@ -4,13 +4,6 @@
 #include "engine/Cache.hpp"
 #include "engine/DynamicBatching.hpp"
 #include "engine/MemoryTelemetry.hpp"
-#include "ops/Int4KvCache.hpp"
-#include "ops/VisionConditional.hpp"
-#include "ops/KernelFusion.hpp"
-#include "ops/SpeculativeDecodingV2.hpp"
-#include "engine/LazyAneAllocation.hpp"
-#include "engine/WriteCoalescing.hpp"
-#include "engine/KvDefragmentation.hpp"
 #include "engine/MemoryGovernor.hpp"
 #include "engine/Scheduler.hpp"
 #include "engine/Types.hpp"
@@ -91,14 +84,8 @@ struct EngineConfig final {
   // mark it replaced (MemoryGovernor::setServing).
   std::function<bool(bool)> serving;
   
-  // Phase 2 & Phase 3 optimizations
-  bool lazyAneAllocation = false;
-  bool writeCoalescing = false;
+  // Compacts the KV pages stranded across partly used extents.
   bool kvDefragmentation = false;
-  std::optional<ops::Int4KvCacheConfig> int4Cache = std::nullopt;
-  std::optional<ops::VisionConditionalConfig> visionConditional = std::nullopt;
-  std::optional<ops::KernelFusionConfig> kernelFusion = std::nullopt;
-  std::optional<ops::SpeculativeDecodingV2Config> speculativeDecoding = std::nullopt;
 };
 
 // While an active one lives, allocations are memory a request in service
@@ -705,13 +692,6 @@ private:
   EngineEventSink &events_;
   Scheduler scheduler_;
   std::optional<DynamicBatching> dynamicBatching_;
-  std::optional<ops::Int4KvCache> int4Cache_;
-  std::optional<ops::VisionConditional> visionConditional_;
-  std::optional<ops::KernelFusion> kernelFusion_;
-  std::optional<ops::SpeculativeDecodingV2> speculativeDecoding_;
-  std::optional<LazyAneAllocator> lazyAneAllocation_;
-  std::optional<WriteCoalescingBuffer> writeCoalescing_;
-  std::optional<KvDefragmentation> kvDefragmentation_;
   MemoryTelemetry telemetry_;
   std::unordered_map<uint64_t, Request> requests_;
   // Pressure preempted work, a lane is still resident, and memory is still
