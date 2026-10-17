@@ -60,6 +60,8 @@ struct NativeArguments final {
   // off).
   bool neuralEngine = true;
   
+  // --working-set, zero when it was not passed.
+  uint64_t workingSetBytes = 0;
   // Memory switches the parser read.
   bool lazyAneAllocation = false;
   bool kvDefragmentation = false;

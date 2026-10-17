@@ -1691,6 +1691,8 @@ def _native_command(args, relaunch_context=None):
         )
     if args.allow_idle_sleep:
         command.extend(("--idle-sleep", "allow"))
+    if args.working_set is not None:
+        command.extend(("--working-set", str(args.working_set)))
     # Memory switches the engine takes as on|off; none is passed when off so
     # the engine's default holds.
     for name, enabled in (

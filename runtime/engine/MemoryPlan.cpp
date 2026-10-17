@@ -35,6 +35,8 @@ std::string_view budgetErrorCodeName(BudgetErrorCode code) {
     return "invalid_model_spec";
   case BudgetErrorCode::WorkingSetTooSmall:
     return "working_set_too_small";
+  case BudgetErrorCode::WorkingSetTooLarge:
+    return "working_set_too_large";
   case BudgetErrorCode::ArithmeticOverflow:
     return "arithmetic_overflow";
   case BudgetErrorCode::KvPoolDoesNotFit:
@@ -157,6 +159,7 @@ std::string EngineMemoryBreakdown::toStatusJson() const {
       << "\"recommended_working_set_bytes\":" << recommendedWorkingSetBytes
       << ','
       << "\"configured_memory_limit_bytes\":" << configuredMemoryLimitBytes
+      << ",\"requested_working_set_bytes\":" << requestedWorkingSetBytes
       << ',' << "\"working_set_margin_bytes\":" << workingSetMarginBytes << ','
       << "\"hard_budget_bytes\":" << hardBudgetBytes << ','
       << "\"target_weights_bytes\":" << targetWeightsBytes << ','
@@ -261,11 +264,13 @@ std::string EngineMemoryPlan::toStatusJson() const {
 EngineMemoryPlanResult
 evaluateEngineMemoryPlan(const DeviceCapabilities &device,
                          const ModelMemoryProfile &model,
-                         uint64_t maximumMemoryBytes) {
+                         uint64_t maximumMemoryBytes,
+                         uint64_t workingSetBytes) {
   EngineMemoryBreakdown breakdown;
   breakdown.physicalMemoryBytes = device.physicalMemoryBytes;
   breakdown.recommendedWorkingSetBytes = device.recommendedMaxWorkingSetBytes;
   breakdown.configuredMemoryLimitBytes = maximumMemoryBytes;
+  breakdown.requestedWorkingSetBytes = workingSetBytes;
   breakdown.targetWeightsBytes = model.footprint.targetWeightsBytes;
   breakdown.draftWeightsBytes = model.footprint.draftWeightsBytes;
   breakdown.visionWeightsBytes = model.footprint.visionWeightsBytes;
@@ -300,8 +305,29 @@ evaluateEngineMemoryPlan(const DeviceCapabilities &device,
                     "margin",
                     std::move(breakdown))};
   }
-  breakdown.hardBudgetBytes = EngineMemoryPolicy::hardBudgetBytes(
-      breakdown.recommendedWorkingSetBytes, maximumMemoryBytes);
+  // --working-set replaces Metal's recommendation as the budget, bounded by
+  // what the Mac can spare; a request beyond that is refused with the number
+  // it could have, never clamped in silence. Without it the automatic budget
+  // stands, and --max-memory caps either one.
+  if (workingSetBytes) {
+    const uint64_t ceiling =
+        EngineMemoryPolicy::budgetCeilingBytes(breakdown.physicalMemoryBytes);
+    if (workingSetBytes > ceiling) {
+      return {std::nullopt,
+              failure(BudgetErrorCode::WorkingSetTooLarge,
+                      "--working-set " + std::to_string(workingSetBytes) +
+                          " leaves this Mac too little memory; pass at most " +
+                          std::to_string(ceiling),
+                      std::move(breakdown))};
+    }
+    breakdown.hardBudgetBytes =
+        maximumMemoryBytes && maximumMemoryBytes < workingSetBytes
+            ? maximumMemoryBytes
+            : workingSetBytes;
+  } else {
+    breakdown.hardBudgetBytes = EngineMemoryPolicy::hardBudgetBytes(
+        breakdown.recommendedWorkingSetBytes, maximumMemoryBytes);
+  }
 
   breakdown.kvPageBytes = model.targetKvLayout.bytesPerModelPage();
   breakdown.fixedRuntimeBytes = model.fixedRuntimeBytes();

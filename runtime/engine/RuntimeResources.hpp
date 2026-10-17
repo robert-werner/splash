@@ -98,6 +98,8 @@ struct RuntimeResourcesConfig {
   model::ModelDescriptor model;
   std::string buildId;
   uint64_t maximumMemoryBytes = 0;
+  // --working-set: the budget to spend even above Metal's recommendation.
+  uint64_t workingSetBytes = 0;
   // No tier unless set.
   CacheDiskQuota cacheDisk;
   // The tier's write budget, the most it writes a day on average

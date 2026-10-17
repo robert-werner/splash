@@ -405,8 +405,14 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
     stateStagingBytes = 0;
   };
   try {
-    const uint64_t hardBudgetBytes = EngineMemoryPolicy::hardBudgetBytes(
-        device.recommendedMaxWorkingSetBytes, config.maximumMemoryBytes);
+    const uint64_t hardBudgetBytes =
+        config.workingSetBytes
+            ? (config.maximumMemoryBytes &&
+                       config.maximumMemoryBytes < config.workingSetBytes
+                   ? config.maximumMemoryBytes
+                   : config.workingSetBytes)
+            : EngineMemoryPolicy::hardBudgetBytes(
+                  device.recommendedMaxWorkingSetBytes, config.maximumMemoryBytes);
     // Reject a model that cannot fit before loading its weights. Beside
     // them the plan needs at least the runtime reserves, one lane's state,
     // the KV runway and any disk tier state staging; the full plan below adds
@@ -498,7 +504,8 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
     ModelMemoryProfile modelProfile{
         loaded.name(), loaded.maximumContextTokens(),
         loaded.targetKvLayout(config.kvFormat), footprint, config.stateFormat};
-    return evaluateEngineMemoryPlan(device, modelProfile, config.maximumMemoryBytes);
+    return evaluateEngineMemoryPlan(device, modelProfile, config.maximumMemoryBytes,
+                                    config.workingSetBytes);
   };
   // The plan with the staging the tier keeps.
   const auto planMemory = [&](uint64_t aneFfnBytes) { return planWith(stateStagingBytes, aneFfnBytes); };

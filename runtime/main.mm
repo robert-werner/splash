@@ -197,6 +197,7 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.model = arguments.model;
   config.resources.buildId = SPLASH_BUILD_ID;
   config.resources.maximumMemoryBytes = arguments.maxMemoryBytes;
+  config.resources.workingSetBytes = arguments.workingSetBytes;
   config.resources.cacheDisk = arguments.maxCacheDisk;
   config.resources.cacheDiskWritesPerDay = arguments.maxCacheDiskWritesBytes;
   config.resources.persistentCache = arguments.persistentCache;

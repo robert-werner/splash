@@ -407,6 +407,19 @@ SERVE_OPTIONS = (
         ),
     ),
     ServeOption(
+        "--working-set",
+        "memory",
+        dict(
+            type=parse_max_memory,
+            default=None,
+            metavar="SIZE",
+            help="Metal memory budget to spend even above what Metal recommends, "
+            "e.g. 19G; raises the KV cache and so the context on a Mac dedicated "
+            "to serving, at most the Mac's memory less a host cushion "
+            "(default: Metal's recommendation)",
+        ),
+    ),
+    ServeOption(
         "--max-context",
         "memory",
         dict(

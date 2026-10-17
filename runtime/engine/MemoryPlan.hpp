@@ -86,6 +86,17 @@ struct EngineMemoryPolicy {
                : automatic;
   }
 
+  // The most a --working-set may claim: the Mac's memory less the host
+  // cushion. Unified memory makes recommendedMaxWorkingSetSize a performance
+  // guideline rather than a hard limit, so a Mac dedicated to serving can
+  // spend more of its memory on the KV cache. What it must not do is leave
+  // macOS nothing, which this bound is.
+  [[nodiscard]] static constexpr uint64_t
+  budgetCeilingBytes(uint64_t physicalMemoryBytes) noexcept {
+    const uint64_t reserve = hostAvailableReserveBytes(physicalMemoryBytes);
+    return physicalMemoryBytes > reserve ? physicalMemoryBytes - reserve : 0;
+  }
+
   // A bounded host cushion, independent of the engine's Metal capacity.
   [[nodiscard]] static constexpr uint64_t
   hostAvailableReserveBytes(uint64_t physicalMemoryBytes) noexcept {
@@ -107,6 +118,8 @@ enum class BudgetErrorCode {
   InvalidDeviceCapabilities,
   InvalidModelSpec,
   WorkingSetTooSmall,
+  // --working-set asked for more than the Mac can spare.
+  WorkingSetTooLarge,
   ArithmeticOverflow,
   KvPoolDoesNotFit,
 };
@@ -118,6 +131,8 @@ struct EngineMemoryBreakdown {
   // ceiling. A higher value never overrides the OS-safe ceiling.
   uint64_t configuredMemoryLimitBytes = 0;
   uint64_t workingSetMarginBytes = 0;
+  // What --working-set asked for, zero when it was not passed.
+  uint64_t requestedWorkingSetBytes = 0;
   uint64_t hardBudgetBytes = 0;
 
   uint64_t targetWeightsBytes = 0;
@@ -194,7 +209,7 @@ private:
   friend EngineMemoryPlanResult
   evaluateEngineMemoryPlan(const DeviceCapabilities &,
                            const ModelMemoryProfile &,
-                           uint64_t);
+                           uint64_t, uint64_t);
 };
 
 struct EngineMemoryPlanResult {
@@ -204,8 +219,13 @@ struct EngineMemoryPlanResult {
 
 // Pure planning without resource allocation.
 [[nodiscard]] EngineMemoryPlanResult
+// `workingSetBytes`, when set, is the budget itself rather than Metal's
+// recommendation less the margin: the engine spends it even above what Metal
+// recommends, up to budgetCeilingBytes. `maximumMemoryBytes` still caps the
+// result, so the two compose as a request and a ceiling.
 evaluateEngineMemoryPlan(const DeviceCapabilities &device,
                          const ModelMemoryProfile &model,
-                         uint64_t maximumMemoryBytes);
+                         uint64_t maximumMemoryBytes,
+                         uint64_t workingSetBytes = 0);
 
 } // namespace splash::engine

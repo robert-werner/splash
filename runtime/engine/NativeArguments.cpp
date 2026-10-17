@@ -178,6 +178,11 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (value != "on" && value != "off")
         throw UsageError("--lazy-ane-allocation requires on or off");
       result.lazyAneAllocation = value == "on";
+    } else if (option == "--working-set") {
+      uint64_t bytes = 0;
+      if (!parsePositive(value, bytes))
+        throw UsageError("--working-set requires a positive integer of bytes");
+      result.workingSetBytes = bytes;
     } else if (option == "--kv-defragmentation") {
       if (value != "on" && value != "off")
         throw UsageError("--kv-defragmentation requires on or off");
