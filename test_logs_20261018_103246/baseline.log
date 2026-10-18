@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/a1111/development/splash_of_mine/server/server.py", line 23, in <module>
+    from transformers import AutoTokenizer
+ModuleNotFoundError: No module named 'transformers'

@@ -1,0 +1,30 @@
+Splash model prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 is already installed in /Users/a1111/development/splash_of_mine/install/models/prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+10:15:46 Loading · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+10:15:47 Chat template · patched to render later system messages in place (the original template rejects them), generation prompt 5-7 tokens
+10:15:51 Weights loaded in 3.71 s.
+10:15:51 Kernel policy for GPU family 10 with 16 cores.
+10:15:51 The GPU runs the prefill FFN alone: ANE FFN split needs unrotated quantized projections.
+10:15:51 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 528 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+10:15:51 Pipeline warming: compiled 6 critical pipelines in 0.001 s
+10:15:57 Memory: growth paused; waiting=0; suspended=0
+10:15:58 Ready · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 · context 256K · language only · http://127.0.0.1:8098
+10:16:28 Memory: growth available; resource wait cleared
+10:16:44 Started · input 60 · cached 0 · effort absent · thinking on
+10:16:44 Done · input 60 · cached 0 · output 20 · TTFT 0.2s · 63.3 tok/s · 4.8 tok/cycle
+10:16:47 Memory: growth paused; waiting=0; suspended=0
+10:16:53 Engine failed · native protocol reached EOF
+10:16:57 Weights loaded in 3.66 s.
+10:16:57 Kernel policy for GPU family 10 with 16 cores.
+10:16:57 The GPU runs the prefill FFN alone: ANE FFN split needs unrotated quantized projections.
+10:16:57 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 528 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+10:16:57 Pipeline warming: compiled 6 critical pipelines in 0.001 s
+10:17:02 Engine restart failed · native protocol reached EOF
+10:17:11 Weights loaded in 3.71 s.
+10:17:11 Kernel policy for GPU family 10 with 16 cores.
+10:17:11 The GPU runs the prefill FFN alone: ANE FFN split needs unrotated quantized projections.
+10:17:11 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 528 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+10:17:11 Pipeline warming: compiled 6 critical pipelines in 0.005 s
+10:17:17 Memory: growth paused; waiting=0; suspended=0
+10:17:17 Engine restarted
+10:17:18 Engine failed · native protocol reached EOF
+10:17:18 Engine stopped · the inference engine failed 3 times in a row, each within 60 s of starting (native protocol reached EOF); Splash stopped restarting it. Set SPLASH_CRASH_TRACE=1 to record a crash trace. Restart the Splash server after fixing the cause.

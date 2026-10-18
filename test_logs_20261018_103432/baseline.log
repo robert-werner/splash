@@ -1,0 +1,13 @@
+Splash model prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 is already installed in /Users/a1111/development/splash_of_mine/install/models/prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+10:34:37 Loading · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+10:34:38 Chat template · patched to render later system messages in place (the original template rejects them), generation prompt 5-7 tokens
+10:34:42 Weights loaded in 4.15 s.
+10:34:42 Kernel policy for GPU family 10 with 16 cores.
+10:34:42 Setting up the Neural Engine FFN split (splash serve --disable-ane keeps the FFN on the GPU).
+10:34:43 Warning · Neural Engine FFN split unavailable (views of a projection's planes take one unrotated quantized tensor, not a view); the GPU runs the prefill FFN alone. --disable-ane silences this line.
+10:34:43 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 1040 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+10:34:43 Pipeline warming: compiled 6 critical pipelines in 0.001 s
+10:34:49 Memory: growth paused; waiting=0; suspended=0
+10:34:50 Ready · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 · context 256K · language only · http://127.0.0.1:8081
+10:35:04 Started · input 72 · cached 0 · effort absent · thinking on
+10:35:21 Done · input 72 · cached 0 · output 500 · TTFT 0.3s · 30.7 tok/s · 2.4 tok/cycle

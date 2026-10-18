@@ -1,0 +1,1 @@
+{"object":"list","data":[{"id":"prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0","object":"model","created":0,"owned_by":"splash","max_model_len":262144,"context_length":262144,"vision":false,"input_modalities":["text"]}],"models":[{"name":"prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0","description":"Splash resident model","release_date":""}]}

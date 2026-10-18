@@ -20,3 +20,4 @@ Splash model prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 is already installed in /U
 08:49:50 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 528 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
 08:49:50 Pipeline warming: compiled 6 critical pipelines in 0.002 s
 08:49:56 Engine restarted
+08:59:57 Weights released after 600 s without a request; the next request restores them

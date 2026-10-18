@@ -1,0 +1,14 @@
+=== Комплексное тестирование Phase 1-4 ===
+Модель: prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+Логи: test_logs_20261018_103246
+
+>>> Тест: baseline
+>>> Флаги: 
+>>> Server PID: 30031
+❌ Сервер не запустился
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/a1111/development/splash_of_mine/server/server.py", line 23, in <module>
+    from transformers import AutoTokenizer
+ModuleNotFoundError: No module named 'transformers'
