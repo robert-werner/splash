@@ -74,6 +74,9 @@ public:
     };
     Stats getStats() const;
     
+    // Wait for pending swap operations to complete
+    void waitForPending();
+    
 private:
     void ioWorker();
     bool writePageToDisk(uint64_t pageId, const void* data, size_t dataSize, 
@@ -93,6 +96,7 @@ private:
     std::mutex queueMutex_;
     std::condition_variable queueCV_;
     std::queue<SwapRequest> requestQueue_;
+    std::atomic<int> inFlightOps_{0};  // Track operations being processed
     
     int swapFd_{-1};
     std::atomic<uint64_t> swapFileOffset_{0};

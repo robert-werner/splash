@@ -5,11 +5,13 @@
 #include <sys/stat.h>
 #include <cstring>
 #include <iostream>
+#include <chrono>
 
 namespace splash {
 
 AsyncKvSwap::AsyncKvSwap(const Config& config, KvPageTier* pageTier)
-    : config_(config), pageTier_(pageTier) {}
+    : config_(config), pageTier_(pageTier) {
+}
 
 AsyncKvSwap::~AsyncKvSwap() {
     shutdown();
@@ -22,6 +24,7 @@ bool AsyncKvSwap::initialize() {
     // Open swap file
     std::string swapPath = config_.swapDir + "/kv_swap.bin";
     swapFd_ = open(swapPath.c_str(), O_RDWR | O_CREAT, 0644);
+    
     if (swapFd_ < 0) {
         std::cerr << "Failed to open swap file: " << swapPath << std::endl;
         return false;
@@ -55,6 +58,7 @@ void AsyncKvSwap::shutdown() {
 
 void AsyncKvSwap::swapOutAsync(uint64_t pageId, const void* data, size_t dataSize,
                                 std::function<void(bool)> callback) {
+    
     SwapRequest req;
     req.type = SwapRequest::SWAP_OUT;
     req.pageId = pageId;
@@ -104,6 +108,36 @@ AsyncKvSwap::Stats AsyncKvSwap::getStats() const {
     return stats_;
 }
 
+void AsyncKvSwap::waitForPending() {
+    auto start = std::chrono::steady_clock::now();
+    auto timeout = std::chrono::seconds(5);
+    
+    while (true) {
+        bool empty;
+        int inFlight;
+        {
+            std::lock_guard<std::mutex> lock(queueMutex_);
+            empty = requestQueue_.empty();
+        }
+        inFlight = inFlightOps_.load(std::memory_order_acquire);
+        
+        if (empty && inFlight == 0) {
+            break;
+        }
+        
+        if (std::chrono::steady_clock::now() - start > timeout) {
+            std::cerr << "[waitForPending] Timeout after 5s, queue=" << !empty 
+                      << " inFlight=" << inFlight << std::endl;
+            break;
+        }
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    
+    // Additional small delay to ensure completion callbacks finish
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+}
+
 void AsyncKvSwap::ioWorker() {
     while (running_.load(std::memory_order_acquire)) {
         SwapRequest req;
@@ -119,10 +153,11 @@ void AsyncKvSwap::ioWorker() {
             
             req = std::move(requestQueue_.front());
             requestQueue_.pop();
+            inFlightOps_.fetch_add(1, std::memory_order_release);
         }
         
         bool success = false;
-        
+
         if (req.type == SwapRequest::SWAP_OUT) {
             uint64_t offset;
             uint32_t compressedSize;
@@ -141,6 +176,8 @@ void AsyncKvSwap::ioWorker() {
             }
         }
         
+        inFlightOps_.fetch_sub(1, std::memory_order_release);
+
         if (req.callback) {
             req.callback(success);
         }
@@ -182,7 +219,9 @@ bool AsyncKvSwap::writePageToDisk(uint64_t pageId, const void* data, size_t data
 }
 
 bool AsyncKvSwap::readPageFromDisk(uint64_t pageId, void* buffer, size_t bufferSize) {
-    if (swapFd_ < 0 || !pageTier_) return false;
+    if (swapFd_ < 0 || !pageTier_) {
+        return false;
+    }
     
     uint64_t offset;
     uint32_t compressedSize, originalSize;

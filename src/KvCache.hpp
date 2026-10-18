@@ -90,6 +90,9 @@ public:
     };
     Stats getStats() const;
     
+    // Wait for pending async operations
+    void waitForPendingSwap();
+    
 private:
     bool handlePageFault(uint64_t pageId);
     bool evictPage(uint64_t pageId);

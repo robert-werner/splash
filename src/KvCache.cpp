@@ -47,6 +47,7 @@ void* KvCache::getPage(uint64_t pageId, bool willWrite) {
     // Check if page is resident
     auto it = pages_.find(pageId);
     if (it != pages_.end()) {
+        pageTier_->acquireRef(pageId);
         pageTier_->recordAccess(pageId, tick);
         if (willWrite) {
             it->second->dirty = true;
@@ -66,6 +67,7 @@ void* KvCache::getPage(uint64_t pageId, bool willWrite) {
         // Page should now be resident
         it = pages_.find(pageId);
         if (it != pages_.end()) {
+            pageTier_->acquireRef(pageId);
             pageTier_->recordAccess(pageId, tick);
             if (willWrite) {
                 it->second->dirty = true;
@@ -89,6 +91,7 @@ void* KvCache::getPage(uint64_t pageId, bool willWrite) {
     pages_[pageId] = std::move(page);
     
     pageTier_->setPageState(pageId, PageState::HOT_RESIDENT);
+    pageTier_->acquireRef(pageId);
     pageTier_->recordAccess(pageId, tick);
     
     return dataPtr;
@@ -133,9 +136,6 @@ void KvCache::evictIfNeeded() {
     size_t evictCount = residentCount - (config_.maxResidentPages * 0.8);
     std::vector<uint64_t> candidates = pageTier_->getLRUCandidates(evictCount, 0);
     
-    std::cout << "Evicting " << candidates.size() << " pages (resident: " 
-              << residentCount << "/" << config_.maxResidentPages << ")" << std::endl;
-    
     for (uint64_t pageId : candidates) {
         evictPage(pageId);
     }
@@ -155,7 +155,14 @@ KvCache::Stats KvCache::getStats() const {
     stats.pageFaults = pageFaultCount_.load(std::memory_order_relaxed);
     stats.evictions = evictionCount_.load(std::memory_order_relaxed);
     stats.currentTick = currentTick_.load(std::memory_order_relaxed);
+    
     return stats;
+}
+
+void KvCache::waitForPendingSwap() {
+    if (asyncSwap_) {
+        asyncSwap_->waitForPending();
+    }
 }
 
 bool KvCache::handlePageFault(uint64_t pageId) {
@@ -191,6 +198,7 @@ bool KvCache::handlePageFault(uint64_t pageId) {
 }
 
 bool KvCache::evictPage(uint64_t pageId) {
+    
     if (!asyncSwap_) {
         return false;
     }
@@ -212,6 +220,9 @@ bool KvCache::evictPage(uint64_t pageId) {
         // Transfer ownership for async operation
         pageToEvict = std::move(it->second);
         pages_.erase(it);
+        
+        // Mark as swapped before async operation starts
+        pageTier_->setPageState(pageId, PageState::SWAPPED_OUT);
     }
     
     // Now do async swap-out with owned data
