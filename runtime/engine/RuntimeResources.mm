@@ -22,6 +22,10 @@
 #include <utility>
 
 namespace splash::engine {
+
+// Forward declaration for ANE telemetry logging callback
+void logAneTelemetry(const AneTelemetrySnapshot &snapshot);
+
 namespace {
 
 static_assert(model::ExecutionLimits::maximumBatchWidth ==
@@ -788,6 +792,19 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
         std::move(aneFfn.split), std::move(aneFfn.outcome)));
     result->adoptPersistentCache();
     
+    // ANE Telemetry: Initialize and start monitoring if enabled and ANE FFN active
+    if (config.aneTelemetryEnabled && result->aneFfn_) {
+      const uint32_t totalLayers = std::visit([](const auto &layout) { return layout.layers; }, 
+                                               result->model_.descriptor.target);
+      result->aneTelemetry_ = std::make_unique<AneTelemetry>(
+        static_cast<uint32_t>(config.aneLayerIndices.size()),
+        totalLayers
+      );
+      result->aneTelemetry_->setCallback([](const AneTelemetrySnapshot &snapshot) {
+        logAneTelemetry(snapshot);
+      });
+    }
+    
     // Warm critical Metal pipelines to eliminate first-request compilation penalty
     metal::PipelineWarmingConfig warmingConfig;
     warmingConfig.kvInt4 = (config.kvFormat == kv::Format::Int4);
@@ -816,6 +833,10 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
 }
 
 RuntimeResources::~RuntimeResources() {
+  // Stop ANE telemetry thread before destroying other resources
+  if (aneTelemetry_) {
+    aneTelemetry_->stop();
+  }
   stopProbation();
   if (persistentCache_.directory) {
     persistentCache_.kv->seal();
@@ -915,6 +936,9 @@ model::RuntimeContext RuntimeResources::modelContext() noexcept {
       *stateStorage_,
       operators_,
       aneFfn_.get(),
+      false,  // enableWeightPrefetch placeholder
+      4,      // prefetchLayers placeholder
+      aneTelemetry_.get(),
   };
 }
 

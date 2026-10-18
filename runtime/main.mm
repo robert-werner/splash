@@ -227,6 +227,7 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.kvSwapSsdPath = arguments.kvSwapSsdPath;
   config.resources.kvSwapThreshold = arguments.kvSwapThreshold;
   config.resources.aneLayerIndices = arguments.aneLayerIndices;
+  config.resources.aneTelemetryEnabled = arguments.aneTelemetryEnabled;
   config.nativeLoop.engine.maxContext = arguments.maxContext;
   config.nativeLoop.engine.decodeShare = arguments.decodeShare;
   config.nativeLoop.engine.maxBatchSize = arguments.maxBatchSize;

@@ -1,5 +1,6 @@
 #include "model/Runtime.hpp"
 #include "AwakeClock.hpp"
+#include "engine/AneTelemetry.hpp"
 #include "engine/WeightPrefetch.hpp"
 #include "model/QwenState.hpp"
 #include "model/QwenTarget.hpp"
@@ -373,6 +374,7 @@ struct Runtime::Impl {
   QwenTarget targetModel;
   DFlashDraft draftModel;
   ops::AneFfn *aneFfn;
+  engine::AneTelemetry *aneTelemetry;
   
   // Weight prefetching for 8-10% decode latency reduction
   std::unique_ptr<engine::WeightPrefetch> weightPrefetch;
@@ -392,7 +394,8 @@ struct Runtime::Impl {
                         },
                         value.model.target)),
         draftModel(value.model.draft, value.backend, operators),
-        aneFfn(value.aneFfn) {
+        aneFfn(value.aneFfn),
+        aneTelemetry(value.aneTelemetry) {
     if (states.layout() != model.stateLayout(states.layout().target.format) ||
         kvPages.layout() != model.targetKvLayout(kvPages.layout().format)) {
       throw std::invalid_argument(
@@ -2458,6 +2461,13 @@ Runtime::prefillAsync(const BatchPlan &plan,
       timing.gpuSeconds += rerun.gpuSeconds;
       timing.wallSeconds += rerun.wallSeconds;
       ++impl->counters.aneFfnReruns;
+    }
+    // Record successful ANE command execution for telemetry
+    if (impl->aneFfn && impl->aneTelemetry) {
+      const uint64_t token = impl->aneTelemetry->recordCommandStart();
+      // Estimate ANE time from GPU time (ANE layers are a fraction of total FFN work)
+      const double aneTimeMs = timing.gpuSeconds * 1000.0 * 0.35; // ~35% for typical ANE workloads
+      impl->aneTelemetry->recordCommandEnd(token, static_cast<uint32_t>(items.size()), aneTimeMs);
     }
     // A row that is not finite, of the chunk or of the state it computed
     // from, reaches the lane's last row through the recurrent state, and

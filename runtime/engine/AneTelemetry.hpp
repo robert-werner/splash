@@ -103,4 +103,7 @@ private:
   AneTelemetryCallback callback_;
 };
 
+// Helper function to log telemetry snapshots in standard format
+void logAneTelemetry(const AneTelemetrySnapshot &snapshot);
+
 } // namespace splash::engine

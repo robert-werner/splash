@@ -13,6 +13,7 @@
 
 #include "model/GgufFile.hpp"
 #include "model/GgufImageLayout.hpp"
+#include "model/HybridQuantization.hpp"
 #include "model/QwenHybridLayout.hpp"
 
 namespace splash::model::gguf {
@@ -173,6 +174,9 @@ void requireMetadata(const GgufMetadata &metadata, const QwenTargetDimensions &g
 // The layers' images, then the head's and the embedding's. Checks the
 // metadata (requireMetadata) and each tensor's shape; throws GgufError naming
 // every missing tensor and every tensor of a type this build cannot load.
-[[nodiscard]] std::vector<Image> planImages(const GgufFile &file, const QwenTargetDimensions &geometry);
+// With hybridConfig enabled, conditionally loads Q4_K_M (unrotated) for ANE layers
+// or PQ2_0 (rotated) for GPU layers.
+[[nodiscard]] std::vector<Image> planImages(const GgufFile &file, const QwenTargetDimensions &geometry,
+                                             const HybridQuantConfig &hybridConfig = {});
 
 } // namespace splash::model::gguf

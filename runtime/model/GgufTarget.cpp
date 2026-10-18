@@ -27,10 +27,9 @@ GgufTargetLoader::GgufTargetLoader(metal::MetalBackend &backend, WeightImages &i
     hybridConfig_.validate(geometry.layers);
   }
   
-  // TODO Phase 2: planImages needs to be extended to accept hybridConfig
-  // and conditionally plan Q4_K_M (unrotated) for ANE layers vs PQ2_0 (rotated) for GPU layers.
-  // For now, plan with default quantization.
-  planned_->images = gguf::planImages(file, geometry);
+  // Phase 2: planImages now accepts hybridConfig and conditionally plans
+  // Q4_K_M (unrotated) for ANE layers vs PQ2_0 (rotated) for GPU layers.
+  planned_->images = gguf::planImages(file, geometry, hybridConfig_);
 }
 
 WeightFile GgufTargetLoader::open(size_t index) {

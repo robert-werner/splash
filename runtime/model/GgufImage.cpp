@@ -74,6 +74,35 @@ public:
     image_.repack(std::move(repack));
   }
 
+  // Quantized FFN tensor with conditional loading based on ANE/GPU mode.
+  // When isAneLayer is true, loads unrotated Q4_K for ANE.
+  // When isAneLayer is false, loads rotated PQ2_0 for GPU.
+  void quantizedFfn(const std::string &name, uint64_t rows, uint64_t columns, bool isAneLayer) {
+    const GgufTensor *tensor = find(name, quantizedType);
+    if (!tensor) return;
+    if (tensor->rows() != rows || tensor->columns() != columns) throw GgufError("unexpected shape for " + name);
+    
+    const uint32_t format = imageFormat(tensor->type);
+    
+    // Verify format matches the expected mode:
+    // ANE layers should use Q4_K (unrotated), GPU layers should use PQ2_0 (rotated)
+    if (isAneLayer) {
+      // For ANE: expect Q4_K format (unrotated)
+      if (format != GGUF_FMT_Q4K) {
+        throw GgufError("ANE layer " + name + " expected Q4_K format, got " + std::to_string(format));
+      }
+    } else {
+      // For GPU: expect PQ2_0 format (rotated)
+      if (format != GGUF_FMT_PQ20) {
+        throw GgufError("GPU layer " + name + " expected PQ2_0 format, got " + std::to_string(format));
+      }
+    }
+    
+    Repack repack = image_.planes(format, rows, columns, name);
+    repack.sources.push_back(tensorRows(*tensor, rows, ggufRowBytes(kQuantFormats[format], columns)));
+    image_.repack(std::move(repack));
+  }
+
   // The routed experts' gate and up tensors, of `experts` * width rows each:
   // ffn_gate_exps and ffn_up_exps, or llama.cpp's fused ffn_gate_up_exps
   // (create_tensor_gate_up_exps), each expert's gate rows then its up rows,
@@ -261,7 +290,7 @@ private:
 std::string prefix(uint32_t layer) { return "blk." + std::to_string(layer) + "."; }
 
 Image layerImage(const GgufFile &file, const QwenTargetDimensions &g, std::vector<std::string> &problems,
-                 uint32_t index) {
+                 uint32_t index, const HybridQuantConfig &hybridConfig) {
   const std::string p = prefix(index);
   const bool full = g.isFullAttentionLayer(index);
   Builder b(file, g, problems, "layer-" + std::to_string(index) + ".bin", index, full ? 1u : 0u);
@@ -298,9 +327,11 @@ Image layerImage(const GgufFile &file, const QwenTargetDimensions &g, std::vecto
     b.quantized(p + "ffn_down_shexp.weight", g.hiddenSize, width);
     b.floatTensor(p + "ffn_gate_inp_shexp.weight", 1, g.hiddenSize);
   } else {
-    b.quantized(p + "ffn_gate.weight", g.intermediateSize, g.hiddenSize);
-    b.quantized(p + "ffn_up.weight", g.intermediateSize, g.hiddenSize);
-    b.quantized(p + "ffn_down.weight", g.hiddenSize, g.intermediateSize);
+    // Conditional loading for FFN layers based on hybridConfig
+    const bool isAneLayer = hybridConfig.isAneLayer(index);
+    b.quantizedFfn(p + "ffn_gate.weight", g.intermediateSize, g.hiddenSize, isAneLayer);
+    b.quantizedFfn(p + "ffn_up.weight", g.intermediateSize, g.hiddenSize, isAneLayer);
+    b.quantizedFfn(p + "ffn_down.weight", g.hiddenSize, g.intermediateSize, isAneLayer);
   }
   return b.finish();
 }
@@ -459,12 +490,13 @@ void requireMetadata(const GgufMetadata &metadata, const QwenTargetDimensions &g
   if (!mismatched.empty()) throw GgufError("GGUF metadata does not match the target: " + mismatched);
 }
 
-std::vector<Image> planImages(const GgufFile &file, const QwenTargetDimensions &geometry) {
+std::vector<Image> planImages(const GgufFile &file, const QwenTargetDimensions &geometry,
+                               const HybridQuantConfig &hybridConfig) {
   requireMetadata(file.metadata(), geometry);
   std::vector<std::string> problems;
   std::vector<Image> images;
   for (uint32_t layer = 0; layer < geometry.layers; ++layer)
-    images.push_back(layerImage(file, geometry, problems, layer));
+    images.push_back(layerImage(file, geometry, problems, layer, hybridConfig));
   Builder head(file, geometry, problems, "head.bin", geometry.layers, 2);
   head.floatNorm("output_norm.weight", geometry.hiddenSize);
   head.quantized("output.weight", geometry.vocabularySize, geometry.hiddenSize);

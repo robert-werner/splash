@@ -22,6 +22,11 @@ namespace splash::ops {
 class AneFfn;
 } // namespace splash::ops
 
+namespace splash::engine {
+class AneTelemetry;
+} // namespace splash::engine
+
+
 namespace splash::model {
 
 class QwenStateStorage;
@@ -89,6 +94,8 @@ struct RuntimeContext final {
   bool enableWeightPrefetch = false;
   // Number of layers to prefetch ahead (default: 4)
   uint32_t prefetchLayers = 4;
+  // Optional ANE telemetry for utilization monitoring
+  engine::AneTelemetry *aneTelemetry = nullptr;
 };
 
 // Validates only the interface between independently defined target and draft
