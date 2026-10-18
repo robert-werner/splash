@@ -23,21 +23,36 @@ std::vector<ComputeDispatch> prefillAttentionDispatches(
   const std::vector<std::string_view> kvFormats;
   if (int4) {
     dispatches.push_back({
-        .pipelineName = "prefill_attention_q4",
+        .pipelineName = "prefill_attention_q4_split",
+        .threadgroups = {32, 1, 1},
+        .threadsPerThreadgroup = {32, 1, 1},
+    });
+    dispatches.push_back({
+        .pipelineName = "prefill_attention_reduce",
         .threadgroups = {32, 1, 1},
         .threadsPerThreadgroup = {32, 1, 1},
     });
   }
   if (int8) {
     dispatches.push_back({
-        .pipelineName = "prefill_attention_q8",
+        .pipelineName = "prefill_attention_q8_split",
+        .threadgroups = {32, 1, 1},
+        .threadsPerThreadgroup = {32, 1, 1},
+    });
+    dispatches.push_back({
+        .pipelineName = "prefill_attention_reduce",
         .threadgroups = {32, 1, 1},
         .threadsPerThreadgroup = {32, 1, 1},
     });
   }
   if (bf16) {
     dispatches.push_back({
-        .pipelineName = "prefill_attention_bf16",
+        .pipelineName = "prefill_attention_bf16_split",
+        .threadgroups = {32, 1, 1},
+        .threadsPerThreadgroup = {32, 1, 1},
+    });
+    dispatches.push_back({
+        .pipelineName = "prefill_attention_reduce",
         .threadgroups = {32, 1, 1},
         .threadsPerThreadgroup = {32, 1, 1},
     });
@@ -50,28 +65,12 @@ std::vector<ComputeDispatch> decodeAttentionDispatches(
     const ops::ExecutionPlans & /*plans*/, bool int4, bool int8, bool bf16) {
   std::vector<ComputeDispatch> dispatches;
   
-  // Decode attention for common batch widths
-  if (int4) {
-    dispatches.push_back({
-        .pipelineName = "decode_attention_q4",
-        .threadgroups = {16, 1, 1},
-        .threadsPerThreadgroup = {32, 1, 1},
-    });
-  }
-  if (int8) {
-    dispatches.push_back({
-        .pipelineName = "decode_attention_q8",
-        .threadgroups = {16, 1, 1},
-        .threadsPerThreadgroup = {32, 1, 1},
-    });
-  }
-  if (bf16) {
-    dispatches.push_back({
-        .pipelineName = "decode_attention_bf16",
-        .threadgroups = {16, 1, 1},
-        .threadsPerThreadgroup = {32, 1, 1},
-    });
-  }
+  // Decode attention uses verify_attention_* kernels for batched decode
+  // No standalone decode_attention_* kernels exist - warmup is handled
+  // via verify_attention_* pipelines which are used during decode
+  (void)int4;
+  (void)int8;
+  (void)bf16;
   
   return dispatches;
 }
@@ -96,13 +95,19 @@ std::vector<ComputeDispatch> draftModelDispatches(
   
   // Draft model decode kernels for speculative execution
   dispatches.push_back({
-      .pipelineName = "draft_decode_attention",
+      .pipelineName = "draft_attention_qkv",
       .threadgroups = {8, 1, 1},
       .threadsPerThreadgroup = {32, 1, 1},
   });
   
   dispatches.push_back({
-      .pipelineName = "draft_decode_mlp",
+      .pipelineName = "draft_attention_bf16_split",
+      .threadgroups = {8, 1, 1},
+      .threadsPerThreadgroup = {32, 1, 1},
+  });
+  
+  dispatches.push_back({
+      .pipelineName = "draft_attention_bf16_reduce",
       .threadgroups = {8, 1, 1},
       .threadsPerThreadgroup = {32, 1, 1},
   });
