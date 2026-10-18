@@ -516,8 +516,8 @@ struct FmtPQ20 {
   static uint4 codes(Chunk q) { return (uint4(q) >> uint4(0, 4, 8, 12)) & 0x00030003u; }
   static QuantCoef coef(Meta mt, ushort) { return {float2(float(as_type<half>(mt)))}; }
 };
-// PTQ1_0 (Prism ML's GGUFs, ggml type 143): plane0 1-bit ternary codes; meta the half d of the 128-element native
-// block, four groups. value = d * q where q in {-1, 0, 1}.
+// PTQ1_0 (Prism ML's GGUFs, ggml type 143): plane0 1-bit binary codes; meta the half d of the 128-element native
+// block, four groups. value = d * (2*q - 1) where q in {0, 1}, giving values in {-d, +d}.
 struct FmtPTQ10 {
   QUANT_FORMAT(GGUF_FMT_PTQ10, QuantLinear, 1, 32, false);
   struct Payload { uint a; }; typedef uint Chunk; typedef ushort Meta;
@@ -525,7 +525,11 @@ struct FmtPTQ10 {
   static Meta loadMeta(device uchar *m) { return *((device ushort *)m); }
   static Chunk chunk(Payload w, ushort c) { return quant_spread1(w.a >> (8 * c)); }
   static Chunk loadChunk(device uchar *p0, device uchar *, ushort c) { return quant_spread1(*((device uchar *)(p0 + c))); }
-  static uint4 codes(Chunk q) { return (uint4(q) >> uint4(0, 2, 4, 6)) & 0x00010001u; }
+  // Extract 1-bit codes {0, 1} and convert to {0, 2} for Zero=1 offset
+  static uint4 codes(Chunk q) { 
+    uint4 bits = (uint4(q) >> uint4(0, 2, 4, 6)) & 0x00010001u;
+    return bits * 2u;  // {0, 2}, with Zero=1 gives scale*(code-1) = scale*{-1, +1}
+  }
   static QuantCoef coef(Meta mt, ushort) { return {float2(float(as_type<half>(mt)))}; }
 };
 

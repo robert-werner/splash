@@ -420,6 +420,7 @@ TENSOR_TYPES = {
     39: "MXFP4",
     40: "NVFP4",
     142: "PQ2_0",
+    143: "PTQ1_0",
 }
 QUANTIZED_TYPES = {
     "Q2_K",
@@ -444,6 +445,7 @@ QUANTIZED_TYPES = {
     "MXFP4",
     "NVFP4",
     "PQ2_0",
+    "PTQ1_0",
 }
 FORMAT_TYPES = QUANTIZED_TYPES | {"BF16", "F16"}
 # Splash loads quantized GGUFs: BF16 and F16 are formats for the tensors a

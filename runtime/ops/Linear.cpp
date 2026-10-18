@@ -62,9 +62,12 @@ void requirePlaneViews(const Projection &p) {
 
 bool Projection::takesPlaneViews() const noexcept {
   const std::vector<QuantizedSegment> &segments = weights_.segments;
-  return !planeInputs_ && segments.size() == 1 && !segments.front().isFloat() && !rotation;
+  // PTQ1_0 (type 143) is unrotated binary quantization despite having Hadamard
+  // metadata in GGUF — treat as rotation-free for ANE plane view compatibility.
+  constexpr uint32_t kPTQ1_0 = 143;
+  const bool isPTQ1_0 = segments.size() == 1 && segments.front().formatId == kPTQ1_0;
+  return !planeInputs_ && segments.size() == 1 && !segments.front().isFloat() && (!rotation || isPTQ1_0);
 }
-
 // Every plane holds its rows in tiles of QUANT_TILE_ROWS rows, each tile's
 // units in order, so the leading rows' tiles lead it.
 Projection Projection::leadingRows(const metal::MetalBackend &backend, uint32_t rows) const {
