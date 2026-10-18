@@ -20,7 +20,7 @@ namespace {
 
 // Test fixture helper for KV swap integration tests
 class KvSwapIntegrationTest {
-protected:
+public:
   void SetUp() {
     // Create temporary swap directory
     swapDir_ = std::filesystem::temp_directory_path() / "kv_swap_test";
