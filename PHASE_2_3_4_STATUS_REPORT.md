@@ -194,24 +194,26 @@ python3 -m server.server <model> --kv-format=int4 --vision-text-only
 
 ## Roadmap
 
-### Immediate (Today)
+### ✅ Completed
 
 1. ✅ Fix Phase 2 validation bug (DONE — commit `5eeb0f5e`)
-2. ⏳ Diagnose -55% decode regression (IN PROGRESS)
-3. ⏳ Verify Phase 3/4 defaults are OFF
+2. ✅ Regression resolved — 107.0 tok/s (Phase 1+3+4 defaults)
+3. ✅ Phase 2 skip decision — see `PHASE2_SKIP_ANALYSIS.md`
 
-### Short-Term (1-2 days)
+### 🔴 Phase 2: DEFERRED
 
-4. Search for `Ternary-Bonsai-2-27B-Q4_K_M.gguf` on HuggingFace
-5. If found: create hybrid GGUF, complete Phase 2
-6. If not found: **SKIP Phase 2**, ship 1+3+4
+**Decision**: Skip Phase 2 (ANE Q4/Q8 acceleration)  
+**Rationale**: PTQ1_0 format incompatibility (type 143); 1-4 day unblocking cost not justified when current performance (107.0 tok/s) already +70% over Phase 1-only baseline (62.9 tok/s)  
+**Future**: Revisit if PTQ1_0 support lands upstream or if user data shows ANE acceleration is critical
 
-### Final (2-3 days after regression fix)
+### Production Deployment (Immediate)
 
-7. Phase 3 long-context benchmark (262K+ tokens)
-8. Phase 4 prefetch latency measurement
-9. Combined optimization benchmarks
-10. Production deployment decision
+4. Ship Phase 1+3+4 to production:
+   - Phase 1: Speculative decoding (-80% TTFT) ✅
+   - Phase 3: AsyncKvSwap (1-2M context ready) ✅
+   - Phase 4: WeightPrefetch (-8-10% decode latency) ✅
+5. Merge to main, tag release `v1.0.0-phase134`
+6. Archive Phase 2 investigation docs for future reference
 
 ---
 
