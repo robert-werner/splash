@@ -1,0 +1,7 @@
+python3 dev/tools/build_config.py record --output 'build/engine/engine/RuntimeResources.o' --config a0ed5dc7c6dad7e0 -- xcrun -sdk macosx clang++ -std=c++20 -O3 -Wall -Wextra -Werror -Iruntime -mmacosx-version-min=26.4 -fobjc-arc -MMD -MP -c runtime/engine/RuntimeResources.mm -o build/engine/engine/RuntimeResources.o
+runtime/engine/RuntimeResources.mm:467:128: error: no member named 'aneLayerIndices' in 'splash::engine::RuntimeResourcesConfig'
+  467 |     loaded = model::loadModel(*backend, config.modelRoot, config.model, config.visionTextOnly, config.lazyDraftLoading, config.aneLayerIndices);
+      |                                                                                                                         ~~~~~~ ^
+1 error generated.
+make: *** [build/engine/engine/RuntimeResources.o] Error 1
+error: source build failed; see the output above

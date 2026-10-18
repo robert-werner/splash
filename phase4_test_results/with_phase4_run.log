@@ -1,0 +1,29 @@
+Testing WITH Phase 4 optimizations...
+Test: 50 tokens
+
+real	0m1.130s
+user	0m0.006s
+sys	0m0.007s
+Saved to: phase4_test_results/with_phase4/test_50.json
+Metrics for 50 tokens:
+  No timing data available
+
+Test: 150 tokens
+
+real	0m5.103s
+user	0m0.007s
+sys	0m0.009s
+Saved to: phase4_test_results/with_phase4/test_150.json
+Metrics for 150 tokens:
+  No timing data available
+
+Test: 300 tokens
+
+real	0m10.666s
+user	0m0.007s
+sys	0m0.008s
+Saved to: phase4_test_results/with_phase4/test_300.json
+Metrics for 300 tokens:
+  No timing data available
+
+All tests completed. Results in: phase4_test_results/with_phase4

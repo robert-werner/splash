@@ -1,0 +1,11 @@
+python3 dev/tools/build_config.py record --output 'build/engine/main.o' --config a0ed5dc7c6dad7e0 -- xcrun -sdk macosx clang++ -std=c++20 -O3 -Wall -Wextra -Werror -Iruntime -mmacosx-version-min=26.4 -fobjc-arc -MMD -MP \
+		-include build/engine/BuildIdentity.hpp -c runtime/main.mm -o build/engine/main.o
+runtime/main.mm:223:20: error: no member named 'aneLayerIndices' in 'splash::engine::RuntimeResourcesConfig'
+  223 |   config.resources.aneLayerIndices = arguments.aneLayerIndices;
+      |   ~~~~~~~~~~~~~~~~ ^
+runtime/main.mm:223:48: error: no member named 'aneLayerIndices' in 'splash::engine::NativeArguments'
+  223 |   config.resources.aneLayerIndices = arguments.aneLayerIndices;
+      |                                      ~~~~~~~~~ ^
+2 errors generated.
+make: *** [build/engine/main.o] Error 1
+error: source build failed; see the output above

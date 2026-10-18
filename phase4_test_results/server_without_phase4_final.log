@@ -1,0 +1,17 @@
+Splash model prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 is already installed in /Users/a1111/development/splash_of_mine/install/models/prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+07:03:33 Loading · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+07:03:33 Chat template · patched to render later system messages in place (the original template rejects them), generation prompt 5-7 tokens
+07:03:37 Weights loaded in 3.42 s.
+07:03:37 Kernel policy for GPU family 10 with 16 cores.
+07:03:37 The GPU runs the prefill FFN alone: ANE FFN split needs unrotated quantized projections.
+07:03:37 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 528 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+07:03:37 Pipeline warming failed: missing Metal function: prefill_attention_q4
+07:03:37 Pipeline warming incomplete: missing Metal function: prefill_attention_q4; first request may see compilation delay.
+07:03:44 Ready · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 · context 256K · http://127.0.0.1:8085
+07:06:19 Started · input 79 · cached 0 · effort absent · thinking on
+07:06:20 Done · input 79 · cached 0 · output 50 · TTFT 0.3s · 54.1 tok/s · 4.2 tok/cycle
+07:06:22 Started · input 79 · cached 64 · effort absent · thinking on
+07:06:27 Done · input 79 · cached 64 · output 150 · TTFT 0.1s · 34.1 tok/s · 2.6 tok/cycle
+07:06:29 Started · input 79 · cached 64 · effort absent · thinking on
+07:06:39 Done · input 79 · cached 64 · output 300 · TTFT 0.1s · 30.5 tok/s · 2.3 tok/cycle
+07:07:41 Stopping · releasing engine resources
