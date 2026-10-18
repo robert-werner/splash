@@ -201,17 +201,44 @@ class GGUFFile:
         elif value_type == 8:  # STRING
             value = self._read_string(f)
         elif value_type == 9:  # ARRAY
-            # Skip arrays for now (complex structure)
+            # Preserve arrays (critical for rotation signs metadata)
             array_type = struct.unpack('<I', f.read(4))[0]
             array_len = struct.unpack('<Q', f.read(8))[0]
-            # Read and discard array elements
-            element_sizes = {0: 1, 1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4, 7: 1}
+            array_data = []
+            
+            # Read array elements based on type
+            element_sizes = {0: 1, 1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4, 7: 1, 10: 8, 11: 8, 12: 8}
             if array_type in element_sizes:
-                f.read(array_len * element_sizes[array_type])
+                # Numeric arrays (including UINT64 for rotation signs)
+                raw_data = f.read(array_len * element_sizes[array_type])
+                if array_type == 0:  # UINT8
+                    array_data = list(struct.unpack(f'<{array_len}B', raw_data))
+                elif array_type == 1:  # INT8
+                    array_data = list(struct.unpack(f'<{array_len}b', raw_data))
+                elif array_type == 2:  # UINT16
+                    array_data = list(struct.unpack(f'<{array_len}H', raw_data))
+                elif array_type == 3:  # INT16
+                    array_data = list(struct.unpack(f'<{array_len}h', raw_data))
+                elif array_type == 4:  # UINT32
+                    array_data = list(struct.unpack(f'<{array_len}I', raw_data))
+                elif array_type == 5:  # INT32
+                    array_data = list(struct.unpack(f'<{array_len}i', raw_data))
+                elif array_type == 6:  # FLOAT32
+                    array_data = list(struct.unpack(f'<{array_len}f', raw_data))
+                elif array_type == 7:  # BOOL
+                    array_data = list(struct.unpack(f'<{array_len}?', raw_data))
+                elif array_type == 10:  # UINT64
+                    array_data = list(struct.unpack(f'<{array_len}Q', raw_data))
+                elif array_type == 11:  # INT64
+                    array_data = list(struct.unpack(f'<{array_len}q', raw_data))
+                elif array_type == 12:  # FLOAT64
+                    array_data = list(struct.unpack(f'<{array_len}d', raw_data))
             elif array_type == 8:  # String array
                 for _ in range(array_len):
-                    self._read_string(f)
-            value = None
+                    array_data.append(self._read_string(f))
+            
+            # Store array as (type, data) tuple
+            value = (array_type, array_data)
         elif value_type == 10:  # UINT64
             value = struct.unpack('<Q', f.read(8))[0]
         elif value_type == 11:  # INT64
@@ -377,9 +404,42 @@ def _write_metadata_value(f, value: GGUFMetadataValue):
     elif value.value_type in formats:
         f.write(struct.pack(formats[value.value_type], value.value))
     elif value.value_type == 9:  # ARRAY
-        # Write empty array for simplicity
-        f.write(struct.pack('<I', 0))  # array type
-        f.write(struct.pack('<Q', 0))  # array length
+        # Write array properly (critical for rotation signs)
+        if value.value is None or not isinstance(value.value, tuple):
+            # Empty array fallback
+            f.write(struct.pack('<I', 0))  # array type
+            f.write(struct.pack('<Q', 0))  # array length
+        else:
+            array_type, array_data = value.value
+            f.write(struct.pack('<I', array_type))
+            f.write(struct.pack('<Q', len(array_data)))
+            
+            # Write array elements
+            if array_type == 0:  # UINT8
+                f.write(struct.pack(f'<{len(array_data)}B', *array_data))
+            elif array_type == 1:  # INT8
+                f.write(struct.pack(f'<{len(array_data)}b', *array_data))
+            elif array_type == 2:  # UINT16
+                f.write(struct.pack(f'<{len(array_data)}H', *array_data))
+            elif array_type == 3:  # INT16
+                f.write(struct.pack(f'<{len(array_data)}h', *array_data))
+            elif array_type == 4:  # UINT32
+                f.write(struct.pack(f'<{len(array_data)}I', *array_data))
+            elif array_type == 5:  # INT32
+                f.write(struct.pack(f'<{len(array_data)}i', *array_data))
+            elif array_type == 6:  # FLOAT32
+                f.write(struct.pack(f'<{len(array_data)}f', *array_data))
+            elif array_type == 7:  # BOOL
+                f.write(struct.pack(f'<{len(array_data)}?', *array_data))
+            elif array_type == 8:  # STRING array
+                for s in array_data:
+                    _write_string(f, s)
+            elif array_type == 10:  # UINT64
+                f.write(struct.pack(f'<{len(array_data)}Q', *array_data))
+            elif array_type == 11:  # INT64
+                f.write(struct.pack(f'<{len(array_data)}q', *array_data))
+            elif array_type == 12:  # FLOAT64
+                f.write(struct.pack(f'<{len(array_data)}d', *array_data))
 
 def main():
     parser = argparse.ArgumentParser(
