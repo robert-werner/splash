@@ -318,6 +318,10 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       result.aneLayerIndices.erase(
         std::unique(result.aneLayerIndices.begin(), result.aneLayerIndices.end()),
         result.aneLayerIndices.end());
+    } else if (option == "--ane-telemetry") {
+      if (value != "on" && value != "off")
+        throw UsageError("--ane-telemetry requires on or off");
+      result.aneTelemetryEnabled = value == "on";
     } else if (option == "--enable-weight-prefetch") {
       if (value != "on" && value != "off")
         throw UsageError("--enable-weight-prefetch requires on or off");

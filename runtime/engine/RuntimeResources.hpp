@@ -2,6 +2,7 @@
 
 #include "ops/Vision.hpp"
 #include "engine/AneFfnStartup.hpp"
+#include "engine/AneTelemetry.hpp"
 #include "engine/MemoryPlan.hpp"
 #include "engine/Cache.hpp"
 #include "engine/CacheDirectory.hpp"
@@ -173,6 +174,9 @@ struct RuntimeResourcesConfig {
   // Remaining FFN layers run on GPU (PQ2_0 rotated). Empty = disabled (pure quantization).
   std::vector<uint32_t> aneLayerIndices;
   
+  // ANE Telemetry: enable ANE utilization monitoring (--ane-telemetry on|off)
+  bool aneTelemetryEnabled = false;
+  
   EngineConfig engine;
 };
 
@@ -283,6 +287,9 @@ public:
   [[nodiscard]] ReleasableMemory &releasableMemory() noexcept { return releasableMemory_; }
   [[nodiscard]] ActualMemoryReport
   actualMemoryReport(const model::ModelMemoryActual &modelMemory) const;
+  
+  // ANE Telemetry: optional ANE utilization monitoring
+  [[nodiscard]] AneTelemetry *aneTelemetry() noexcept { return aneTelemetry_.get(); }
 
 private:
 
@@ -319,6 +326,8 @@ private:
   std::unique_ptr<KvPool> kvPool_;
   std::unique_ptr<engine::Cache> cache_;
   std::unique_ptr<ops::AneFfn> aneFfn_;
+  // Optional ANE utilization telemetry (--ane-telemetry on)
+  std::unique_ptr<AneTelemetry> aneTelemetry_;
   // Over model_'s images and aneFfn_.
   ReleasableMemory releasableMemory_;
   AneFfnOutcome aneFfnOutcome_;

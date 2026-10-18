@@ -126,6 +126,8 @@ struct NativeArguments final {
   // --ane-layers "0,2,4,8,10,14": comma-separated FFN layer indices for ANE (Q4_K unrotated).
   // Remaining layers use GPU (PQ2_0 rotated). Empty = disabled (pure quantization).
   std::vector<uint32_t> aneLayerIndices;
+  // --ane-telemetry on|off: enable ANE utilization monitoring (default: off).
+  bool aneTelemetryEnabled = false;
   
   // Phase 4: Weight Prefetch
   // --enable-weight-prefetch: overlap weight memory transfer with GPU compute (default: off).
