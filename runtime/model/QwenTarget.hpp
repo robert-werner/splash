@@ -291,6 +291,15 @@ public:
   void addEmbedding(metal::CommandGraph &graph, metal::MetalBuffer tokens,
                     metal::MetalBuffer hidden, uint32_t rows) const;
 
+  // Phase 4: Weight prefetch support - returns weight buffers for a given layer
+  // to enable async prefetch overlap with GPU compute.
+  struct LayerWeightBuffers {
+    std::vector<const void*> pointers;
+    std::vector<size_t> sizes;
+    size_t totalBytes = 0;
+  };
+  [[nodiscard]] LayerWeightBuffers getLayerWeights(uint32_t layer) const;
+
 private:
   using WeightView =
       std::variant<const QwenTargetWeights<Qwen3_8Layout, Qwen3_8LayerWeights> *,
