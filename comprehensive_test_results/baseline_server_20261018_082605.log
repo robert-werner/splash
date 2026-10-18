@@ -1,0 +1,13 @@
+Splash model prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 is already installed in /Users/a1111/development/splash_of_mine/install/models/prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+08:26:08 Loading · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+08:26:09 Chat template · patched to render later system messages in place (the original template rejects them), generation prompt 5-7 tokens
+08:26:12 Weights loaded in 3.63 s.
+08:26:12 Kernel policy for GPU family 10 with 16 cores.
+08:26:12 The GPU runs the prefill FFN alone: ANE FFN split needs unrotated quantized projections.
+08:26:12 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 528 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+08:26:12 Pipeline warming: compiled 6 critical pipelines in 0.002 s
+08:26:19 Ready · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 · context 256K · language only · http://127.0.0.1:8090
+08:26:20 Error · model_not_found · POST /v1/chat/completions
+08:26:22 Error · model_not_found · POST /v1/chat/completions
+08:26:24 Error · model_not_found · POST /v1/chat/completions
+08:26:26 Stopping · releasing engine resources

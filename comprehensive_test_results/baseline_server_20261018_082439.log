@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/Users/a1111/development/splash_of_mine/install/launcher.py", line 488, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/a1111/development/splash_of_mine/install/launcher.py", line 473, in main
+    args = parse_args(argv)
+  File "/Users/a1111/development/splash_of_mine/install/launcher.py", line 434, in parse_args
+    serve_options.add_serve_arguments(server, groups)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/a1111/development/splash_of_mine/server/serve_options.py", line 849, in add_serve_arguments
+    groups[option.group].add_argument(
+    ~~~~~~^^^^^^^^^^^^^^
+KeyError: 'quantization'

@@ -312,6 +312,7 @@ GROUPS = (
     ("api", "API"),
     ("requests", "requests"),
     ("performance", "performance"),
+    ("quantization", "quantization"),
 )
 
 
