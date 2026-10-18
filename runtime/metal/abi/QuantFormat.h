@@ -215,7 +215,7 @@ inline constexpr uint32_t quant_affine_bits(uint32_t format) { return (kQuantFor
 // Whether a format's native block is the loader's rather than a GGUF type's:
 // the MLX affine formats, NVFP4 and FP8.
 inline constexpr bool quant_loader_format(uint32_t format) {
-  return quant_affine_format(format) || format == GGUF_FMT_NVFP4 || format == GGUF_FMT_FP8;
+  return quant_affine_format(format) || format == GGUF_FMT_PTQ10 || format == GGUF_FMT_NVFP4 || format == GGUF_FMT_FP8;
 }
 // Whether a format's values enter a bf16 matrix multiply exactly, as the
 // Apple9 register tile takes them (kernels/decode/linear_gguf_sgmatrix.metal):
