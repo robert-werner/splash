@@ -260,6 +260,51 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (!parseFinite(value, threshold) || threshold < 0.1 || threshold > 0.5)
         throw UsageError("--speculation-threshold requires a number in [0.1, 0.5]");
       result.speculationThreshold = static_cast<float>(threshold);
+    } else if (option == "--kv-swap-enable") {
+      if (value != "on" && value != "off")
+        throw UsageError("--kv-swap-enable requires on or off");
+      result.kvSwapEnable = value == "on";
+    } else if (option == "--kv-swap-ssd-path") {
+      if (value.empty())
+        throw UsageError("--kv-swap-ssd-path requires a directory path");
+      result.kvSwapSsdPath = std::filesystem::absolute(std::filesystem::path(value));
+    } else if (option == "--kv-swap-threshold") {
+      double threshold = 0.0;
+      if (!parseFinite(value, threshold) || threshold <= 0.0 || threshold >= 1.0)
+        throw UsageError("--kv-swap-threshold requires a number in (0.0, 1.0)");
+      result.kvSwapThreshold = threshold;
+    } else if (option == "--ane-layers") {
+      if (value.empty())
+        throw UsageError("--ane-layers requires comma-separated layer indices");
+      // Parse comma-separated indices
+      std::string indexStr;
+      for (char c : value) {
+        if (c == ',') {
+          if (!indexStr.empty()) {
+            uint32_t idx = 0;
+            if (!parsePositive(std::string_view(indexStr), idx))
+              throw UsageError("--ane-layers: invalid layer index");
+            result.aneLayerIndices.push_back(idx);
+            indexStr.clear();
+          }
+        } else if (std::isdigit(c)) {
+          indexStr += c;
+        } else {
+          throw UsageError("--ane-layers: invalid format (expected comma-separated integers)");
+        }
+      }
+      if (!indexStr.empty()) {
+        uint32_t idx = 0;
+        if (!parsePositive(std::string_view(indexStr), idx))
+          throw UsageError("--ane-layers: invalid layer index");
+        result.aneLayerIndices.push_back(idx);
+      }
+      // Sort and validate
+      std::sort(result.aneLayerIndices.begin(), result.aneLayerIndices.end());
+      // Remove duplicates
+      result.aneLayerIndices.erase(
+        std::unique(result.aneLayerIndices.begin(), result.aneLayerIndices.end()),
+        result.aneLayerIndices.end());
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
     } else {

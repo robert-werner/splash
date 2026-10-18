@@ -715,6 +715,16 @@ SERVE_OPTIONS = (
         ),
     ),
     ServeOption(
+        "--ane-layers",
+        "quantization",
+        dict(
+            type=str,
+            default="",
+            metavar="INDICES",
+            help="hybrid quantization: comma-separated FFN layer indices for ANE (Q4_K unrotated), e.g., '0,2,4,8,10,14'; remaining layers use GPU (PQ2_0 rotated); empty = disabled",
+        ),
+    ),
+    ServeOption(
         "--priority-scheduling",
         "requests",
         dict(
@@ -787,6 +797,35 @@ SERVE_OPTIONS = (
             default=0.25,
             metavar="THRESHOLD",
             help="draft acceptance threshold for adaptive speculation depth (default: 0.25; range: 0.1-0.5)",
+        ),
+    ),
+    ServeOption(
+        "--kv-swap-enable",
+        "performance",
+        dict(
+            choices=("on", "off"),
+            default="off",
+            help="enable async KV page swapping to SSD with compression (extends context from 262K to 1M+, default: off)",
+        ),
+    ),
+    ServeOption(
+        "--kv-swap-ssd-path",
+        "performance",
+        dict(
+            type=parse_cache_dir,
+            default=None,
+            metavar="PATH",
+            help="directory for swap files (default: ~/.splash/kv_cache)",
+        ),
+    ),
+    ServeOption(
+        "--kv-swap-threshold",
+        "performance",
+        dict(
+            type=parse_decode_share,
+            default=0.90,
+            metavar="THRESHOLD",
+            help="RAM usage threshold to trigger page swap-out (default: 0.90, range: 0.0-1.0)",
         ),
     ),
 )

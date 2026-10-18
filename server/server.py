@@ -1704,6 +1704,8 @@ def _native_command(args, relaunch_context=None):
     ):
         if enabled:
             command.extend((name, "on"))
+    if args.ane_layers:
+        command.extend(("--ane-layers", args.ane_layers))
     if args.priority_scheduling == "on":
         command.extend(("--priority-scheduling", "on"))
     if args.preempt_threshold != 4096:
@@ -1722,6 +1724,13 @@ def _native_command(args, relaunch_context=None):
         command.extend(("--persistent-ane-calibration", "off"))
     if args.speculation_threshold != 0.25:
         command.extend(("--speculation-threshold", str(args.speculation_threshold)))
+    # Phase 3: Async KV Swap
+    if args.kv_swap_enable == "on":
+        command.extend(("--kv-swap-enable", "on"))
+    if args.kv_swap_ssd_path is not None:
+        command.extend(("--kv-swap-ssd-path", str(args.kv_swap_ssd_path)))
+    if args.kv_swap_threshold != 0.90:
+        command.extend(("--kv-swap-threshold", str(args.kv_swap_threshold)))
     if relaunch_context is not None and args.max_context is None:
         command.extend(("--relaunch-context", str(relaunch_context)))
     return command

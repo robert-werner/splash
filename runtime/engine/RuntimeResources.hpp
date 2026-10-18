@@ -155,10 +155,15 @@ struct RuntimeResourcesConfig {
   bool recalibrateAne = false;
   bool lazyDraftLoading = false;
   
-  // SSD-backed KV cache extension for 1M+ token contexts.
+  // --ssd-kv on|off: enable SSD-backed extended KV cache tier.
   bool ssdKvEnabled = false;
   std::string ssdKvPath;
   uint32_t hotTierTokens = 200 * 1024; // 200K tokens
+  
+  // Phase 2: ANE Hybrid Quantization
+  // Per-layer quantization configuration: indices of FFN layers to run on ANE (Q4_K unrotated).
+  // Remaining FFN layers run on GPU (PQ2_0 rotated). Empty = disabled (pure quantization).
+  std::vector<uint32_t> aneLayerIndices;
   
   EngineConfig engine;
 };

@@ -223,6 +223,7 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.ssdKvEnabled = arguments.ssdKvEnabled;
   config.resources.ssdKvPath = arguments.ssdKvPath;
   config.resources.hotTierTokens = arguments.hotTierTokens;
+  config.resources.aneLayerIndices = arguments.aneLayerIndices;
   config.nativeLoop.engine.maxContext = arguments.maxContext;
   config.nativeLoop.engine.decodeShare = arguments.decodeShare;
   return config;

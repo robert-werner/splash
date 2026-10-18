@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ops/Vision.hpp"
+#include "engine/AsyncKvSwap.hpp"
 #include "engine/Cache.hpp"
 #include "engine/DynamicBatching.hpp"
 #include "engine/MemoryTelemetry.hpp"
@@ -135,6 +136,21 @@ struct EngineConfig final {
   // Default: 8192 tokens (~200-300ms on M5 Pro 24GB).
   // Range: 512-32768 tokens.
   uint32_t prefillChunkSize = 8192;
+  
+  // Phase 3: Async KV Swap to SSD with compression
+  // Enable asynchronous KV page swapping to SSD (--kv-swap-enable).
+  // When true, cold KV pages are evicted to SSD when RAM usage exceeds
+  // swapThreshold, extending effective context from 262K (RAM) to 1M+ (SSD).
+  bool enableAsyncKvSwap = false;
+  // Directory for swap files (--kv-swap-ssd-path PATH).
+  // Default: ~/.splash/kv_cache
+  std::string kvSwapPath = "~/.splash/kv_cache";
+  // RAM usage threshold for triggering swap-out (--kv-swap-threshold).
+  // Range: (0.0, 1.0), default: 0.90 (swap when RAM > 90% capacity).
+  double kvSwapThreshold = 0.90;
+  // Maximum swap batch size (pages swapped per operation).
+  // Default: 32 pages (~128 MiB at 4 MiB/page).
+  uint32_t kvSwapBatchSize = 32;
 };
 
 // While an active one lives, allocations are memory a request in service
