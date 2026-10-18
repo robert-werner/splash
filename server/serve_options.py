@@ -234,6 +234,16 @@ def parse_max_batch_size(value):
     return size
 
 
+def parse_swap_batch_size(value):
+    try:
+        size = int(value)
+    except ValueError:
+        size = 0
+    if size <= 0 or size > 256:
+        raise argparse.ArgumentTypeError("must be a positive integer between 1 and 256")
+    return size
+
+
 def parse_max_image_pixels(value):
     try:
         pixels = int(value)
@@ -843,10 +853,10 @@ SERVE_OPTIONS = (
         "--kv-swap-batch-size",
         "performance",
         dict(
-            type=parse_max_batch_size,
+            type=parse_swap_batch_size,
             default=32,
             metavar="SIZE",
-            help="maximum pages swapped per operation (default: 32 pages, range: 1-16)",
+            help="maximum pages swapped per operation (default: 32 pages, range: 1-256)",
         ),
     ),
     ServeOption(
