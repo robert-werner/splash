@@ -154,6 +154,7 @@ struct GgufEmbedPTQ10 {
 };
 // block_iq4_nl: block_q4_0's layout, whose codes index the IQ4_NL values.
 struct GgufEmbedIQ4NL {
+  enum : uint { Weights = 32, Bytes = 18, D = 0, Codes = 2 };
   __attribute__((always_inline)) static float decode(device const uchar *block, uint dim) {
 #pragma clang fp reassociate(off)
     const uint l = dim % Weights;

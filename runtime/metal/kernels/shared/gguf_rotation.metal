@@ -53,15 +53,13 @@ kernel void gguf_rotate(device const bfloat *input [[buffer(0)]], device const c
   }
 }
 
-// The token rows of a PQ2_0 table stored rotated (GgufEmbedPQ20), as D (H r): the gathered values enter the
-// transform in fp32, so each output rounds once. Grid (hidden / GGUF_ROTATION_BLOCK, rows).
-kernel void gguf_embed_rotated_pq20(device const uint *tokens [[buffer(0)]], device const uchar *table [[buffer(1)]],
-                                    device const char *signs [[buffer(2)]], device bfloat *output [[buffer(3)]],
-                                    constant GgufEmbedParams &p [[buffer(4)]],
-                                    uint2 group [[threadgroup_position_in_grid]],
-                                    uint tid [[thread_index_in_threadgroup]]) {
-  using F = GgufEmbedPQ20;
-  threadgroup float values[GGUF_ROTATION_BLOCK];
+// The token rows of a PQ2_0 or PTQ1_0 table stored rotated (GgufEmbedPQ20, GgufEmbedPTQ10), as D (H r): the
+// gathered values enter the transform in fp32, so each output rounds once. Grid (hidden / GGUF_ROTATION_BLOCK,
+// rows); `values` is the kernel's threadgroup block.
+template <class F>
+static inline void embed_rotated(device const uint *tokens, device const uchar *table, device const char *signs,
+                                 device bfloat *output, constant GgufEmbedParams &p, threadgroup float *values,
+                                 uint2 group, uint tid) {
   // The runtime validates every token; the guard keeps a direct call inside the table.
   const uint token = tokens[group.y] < p.vocabulary ? tokens[group.y] : 0;
   const uint column = group.x * GGUF_ROTATION_BLOCK;
@@ -77,3 +75,14 @@ kernel void gguf_embed_rotated_pq20(device const uint *tokens [[buffer(0)]], dev
     output[ulong(group.y) * p.hidden + column + j] = bfloat(values[j] * kRotationScale * float(signs[column + j]));
   }
 }
+#define GGUF_EMBED_ROTATED(Name, F)                                                                                \
+  kernel void Name(device const uint *tokens [[buffer(0)]], device const uchar *table [[buffer(1)]],               \
+                   device const char *signs [[buffer(2)]], device bfloat *output [[buffer(3)]],                    \
+                   constant GgufEmbedParams &p [[buffer(4)]], uint2 group [[threadgroup_position_in_grid]],         \
+                   uint tid [[thread_index_in_threadgroup]]) {                                                     \
+    threadgroup float values[GGUF_ROTATION_BLOCK];                                                                 \
+    embed_rotated<F>(tokens, table, signs, output, p, values, group, tid);                                         \
+  }
+GGUF_EMBED_ROTATED(gguf_embed_rotated_pq20, GgufEmbedPQ20)
+GGUF_EMBED_ROTATED(gguf_embed_rotated_ptq10, GgufEmbedPTQ10)
+#undef GGUF_EMBED_ROTATED

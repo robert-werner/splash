@@ -69,15 +69,18 @@ LayerQuantMode selectLayerMode(const HybridQuantConfig &config, uint32_t layerIn
 std::string describeHybridConfig(const HybridQuantConfig &config, uint32_t totalLayers) {
   if (!config.enabled() || totalLayers == 0) return "disabled";
 
+  // The GGUF decides each layer's format; this names the layers the user
+  // asked the Neural Engine to take, which the ANE FFN split then accepts or
+  // declines per layer at runtime (Projection::takesPlaneViews).
   std::ostringstream desc;
-  desc << config.aneLayerIndices.size() << " of " << totalLayers << " FFN layers on ANE (";
+  desc << config.aneLayerIndices.size() << " of " << totalLayers << " FFN layers requested (";
 
   for (size_t i = 0; i < config.aneLayerIndices.size(); ++i) {
     if (i > 0) desc << ",";
     desc << config.aneLayerIndices[i];
   }
 
-  desc << "), " << (totalLayers - config.aneLayerIndices.size()) << " on GPU";
+  desc << "); each layer's format comes from the GGUF";
   return desc.str();
 }
 

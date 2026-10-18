@@ -410,9 +410,10 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
     logLine("SSD cache off: ", reason, "; no state staging is set aside.");
     stateStagingBytes = 0;
   };
-  // Phase 2: ANE Hybrid Quantization — the memory plan and loadModel must
-  // agree on each layer's quantization format, so the config is built once
-  // here and used by both.
+  // --ane-layers: the FFN layers the user asks the Neural Engine to take. The
+  // GGUF's own formats decide each layer's planes, so this only names the
+  // intent (model/HybridQuantization.hpp); the ANE FFN split accepts the
+  // layers it can and the GPU runs the rest.
   const model::HybridQuantConfig hybridConfig = [&] {
     model::HybridQuantConfig built;
     built.aneLayerIndices = config.aneLayerIndices;
@@ -434,7 +435,7 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
     kv::Layout kvLayout = config.model.targetKvLayout;
     kvLayout.format = config.kvFormat;
     const uint64_t weightBytes = model::modelWeightBytes(config.modelRoot, config.model,
-                                                         config.visionTextOnly, hybridConfig);
+                                                         config.visionTextOnly);
     const auto requiredFor = [&](uint64_t stagingBytes) {
       uint64_t fixedBytes = 0;
       for (const uint64_t bytes : {weightBytes, model::kPipelineReserveBytes,
@@ -479,10 +480,10 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
     loaded = model::loadModel(*backend, config.modelRoot, config.model, config.visionTextOnly, config.lazyDraftLoading, hybridConfig);
     loaded.visionSkipped = config.visionTextOnly && loaded.descriptor.hasVision();
     
-    // Log hybrid quantization configuration if enabled
+    // --ane-layers, when given: the layers the user asks the ANE to take.
     if (hybridConfig.enabled()) {
       const uint32_t totalLayers = std::visit([](const auto &layout) { return layout.layers; }, loaded.descriptor.target);
-      logLine("ANE Hybrid Quantization: ", describeHybridConfig(hybridConfig, totalLayers));
+      logLine("ANE Hybrid Quantization: ", describeHybridConfig(hybridConfig, totalLayers), ".");
     }
     requireLoadedModel(loaded);
     const std::chrono::duration<double> loading = AwakeClock::now() - started;

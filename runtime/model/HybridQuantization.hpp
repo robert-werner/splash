@@ -12,12 +12,16 @@ namespace splash::model {
 //
 // Motivation: PQ2_0 uses rotation, blocking ANE (takesPlaneViews requires
 // !rotation). Q4_K_M without rotation enables ANE but weighs 15.3 GB, dropping
-// context to ~80K. Hybrid approach: 6 FFN layers (37.5% of 16) in unrotated
-// Q4_K for ANE, 10 layers in PQ2_0 for GPU, yielding ~8.85 GB total weight
-// (+2.1 GB vs pure PQ2_0) with ~200K context and +25-30% decode speed.
+// context to ~80K. Hybrid approach: some FFN layers in unrotated Q4_K for ANE,
+// the rest in PQ2_0 for GPU.
+//
+// The GGUF, not this config, decides each layer's format: Splash does not
+// requantize at load, so a layer asked of the ANE runs there only when the
+// GGUF already holds it unrotated. A rotated layer (PQ2_0, PTQ1_0) is
+// declined by the ANE FFN split at runtime and runs on the GPU.
 struct HybridQuantConfig final {
-  // Layer indices (0-based) that should use ANE-compatible quantization
-  // (unrotated Q4_K_M). Empty means no hybrid quantization.
+  // Layer indices (0-based) the user asks the ANE to take. Empty means no
+  // hybrid quantization.
   std::vector<uint32_t> aneLayerIndices;
 
   [[nodiscard]] bool enabled() const noexcept { return !aneLayerIndices.empty(); }

@@ -103,12 +103,9 @@ struct RuntimeContext final {
 void requireCompatibleModel(const LoadedModel &model);
 
 // The bytes of every image the model's weights load into; with `textOnly`
-// the vision tower's, which is not loaded then. `hybridConfig` selects the
-// per-layer quantization format, so the planned bytes match what loadModel
-// will allocate.
+// the vision tower's, which is not loaded then.
 [[nodiscard]] uint64_t modelWeightBytes(const std::filesystem::path &root, const ModelDescriptor &descriptor,
-                                        bool textOnly = false,
-                                        const HybridQuantConfig &hybridConfig = {});
+                                        bool textOnly = false);
 
 // The vision role's source, planned; null for a model without vision.
 [[nodiscard]] std::unique_ptr<VisionLoader> planVisionLoader(const std::filesystem::path &root,

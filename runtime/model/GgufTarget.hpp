@@ -46,7 +46,8 @@ private:
 
   metal::MetalBackend &backend_;
   WeightImages &images_;
-  // The geometry planImages checks.
+  std::shared_ptr<Planned> planned_;
+  // The rotation planImages checked, if the GGUF has one.
   std::optional<GgufRotation> rotation_;
 };
 
