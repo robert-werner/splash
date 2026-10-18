@@ -85,11 +85,11 @@ public:
     const uint32_t format = imageFormat(tensor->type);
     
     // Verify format matches the expected mode:
-    // ANE layers should use Q4_K (unrotated), GPU layers should use PQ2_0 (rotated)
+    // ANE layers should use Q4_K (unrotated) or PTQ1_0 (unrotated), GPU layers should use PQ2_0 (rotated)
     if (isAneLayer) {
-      // For ANE: expect Q4_K format (unrotated)
-      if (format != GGUF_FMT_Q4K) {
-        throw GgufError("ANE layer " + name + " expected Q4_K format, got " + std::to_string(format));
+      // For ANE: expect Q4_K or PTQ1_0 format (both unrotated)
+      if (format != GGUF_FMT_Q4K && format != GGUF_FMT_PTQ10) {
+        throw GgufError("ANE layer " + name + " expected Q4_K or PTQ1_0 format, got " + std::to_string(format));
       }
     } else {
       // For GPU: expect PQ2_0 format (rotated)

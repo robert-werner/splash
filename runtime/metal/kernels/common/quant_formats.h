@@ -516,6 +516,18 @@ struct FmtPQ20 {
   static uint4 codes(Chunk q) { return (uint4(q) >> uint4(0, 4, 8, 12)) & 0x00030003u; }
   static QuantCoef coef(Meta mt, ushort) { return {float2(float(as_type<half>(mt)))}; }
 };
+// PTQ1_0 (Prism ML's GGUFs, ggml type 143): plane0 1-bit ternary codes; meta the half d of the 128-element native
+// block, four groups. value = d * q where q in {-1, 0, 1}.
+struct FmtPTQ10 {
+  QUANT_FORMAT(GGUF_FMT_PTQ10, QuantLinear, 1, 32, false);
+  struct Payload { uint a; }; typedef uint Chunk; typedef ushort Meta;
+  static Payload load(device uchar *p0, device uchar *) { return {*((device uint *)p0)}; }
+  static Meta loadMeta(device uchar *m) { return *((device ushort *)m); }
+  static Chunk chunk(Payload w, ushort c) { return quant_spread1(w.a >> (8 * c)); }
+  static Chunk loadChunk(device uchar *p0, device uchar *, ushort c) { return quant_spread1(*((device uchar *)(p0 + c))); }
+  static uint4 codes(Chunk q) { return (uint4(q) >> uint4(0, 2, 4, 6)) & 0x00010001u; }
+  static QuantCoef coef(Meta mt, ushort) { return {float2(float(as_type<half>(mt)))}; }
+};
 
 // The GGUF format whose planes hold Bits-bit linear codes, which an MLX affine format keeps as it does
 // (metal/abi/QuantFormat.h).
@@ -566,7 +578,7 @@ QUANT_AFFINE_GROUPS(8)
   X(FmtAF3G128, af3g128) X(FmtAF4G32, af4g32) X(FmtAF4G64, af4g64) X(FmtAF4G128, af4g128) X(FmtAF5G32, af5g32)    \
   X(FmtAF5G64, af5g64) X(FmtAF5G128, af5g128) X(FmtAF6G32, af6g32) X(FmtAF6G64, af6g64) X(FmtAF6G128, af6g128)    \
   X(FmtAF8G32, af8g32) X(FmtAF8G64, af8g64) X(FmtAF8G128, af8g128) X(FmtNVFP4, nvfp4) X(FmtFP8, fp8)            \
-  X(FmtQ50, q50) X(FmtQ51, q51) X(FmtBF16, bf16)
+  X(FmtQ50, q50) X(FmtQ51, q51) X(FmtBF16, bf16) X(FmtPTQ10, ptq10)
 #define QUANT_FORMATS(X) QUANT_REGISTER_FORMATS(X) X(FmtF16, f16)
 
 // Runs body(F()) with the format type of run-time format id `format` (GGUF_FMT_*), for kernels whose tiles pick

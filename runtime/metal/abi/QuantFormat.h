@@ -120,7 +120,8 @@
 #define GGUF_FMT_Q51 40u
 #define GGUF_FMT_BF16 41u
 #define GGUF_FMT_F16 42u
-#define GGUF_FMT_COUNT 43u
+#define GGUF_FMT_PTQ10 43u
+#define GGUF_FMT_COUNT 44u
 
 // The tensor type an image descriptor names for an MLX affine format: no GGUF
 // type is of this form.
@@ -193,6 +194,8 @@ QUANT_CONSTANT QuantFormat kQuantFormats[GGUF_FMT_COUNT] = {
     // 16-bit floats in native blocks of 256 GGUF values; meta: g, which the repack writes.
     {30, 256, 512, 64, 0, 4, 8, "bf16"},
     {1, 256, 512, 64, 0, 4, 8, "f16"},
+    // Prism's block_ptq1_0, one d per 128 elements; meta: d
+    {143, 128, 18, 4, 0, 2, 4, "ptq10"},
 };
 
 // The format that stores a GGUF tensor type (or a loader's);
