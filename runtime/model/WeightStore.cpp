@@ -140,10 +140,16 @@ ops::QuantizedSegment readQuantizedSegment(WeightFile &file, std::string_view la
         d.plane1Bytes ? file.section(d.plane1Bytes, std::string(label) + "-plane1") : metal::MetalBuffer{};
     metal::MetalBuffer meta = file.section(d.metaTotalBytes, std::string(label) + "-meta");
     
-    // TODO(hybrid-quantization): Per-layer format selection stub.
-    // Runtime conversion Q4_K ↔ PQ2_0 requires format-specific dequant/requant
-    // logic not yet implemented. Hybrid quantization CLI flow is functional but
-    // loads model's declared format only. See PHASE2_COMPLETION_REPORT.md.
+    // Hybrid quantization: Conditional loading per layer (Phase 2)
+    // The GGUF file contains the model's declared format for all tensors.
+    // Hybrid quantization requires different formats per layer (Q4_K unrotated for ANE,
+    // PQ2_0 rotated for GPU), which requires either:
+    //   1. Runtime format conversion (dequant → requant, not yet implemented)
+    //   2. Multi-format GGUF with per-layer tensor selection
+    //   3. Separate GGUF files per format with merge logic
+    // Current implementation loads the declared format only. Per-layer format
+    // selection will be implemented when hybrid GGUF loading is available.
+    // See PHASE2_COMPLETION_REPORT.md for implementation options.
     
     return ops::QuantizedSegment::planes(format, d.outputSize, d.inputSize, std::move(plane0),
                                          std::move(plane1), std::move(meta));
