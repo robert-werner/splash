@@ -1,4 +1,5 @@
 #include "model/Qwen3_8.hpp"
+#include "model/HybridQuantization.hpp"
 #include "model/QwenTargetLoader.hpp"
 
 #include <cstring>
@@ -49,8 +50,16 @@ void rotateInputs(metal::MetalBackend &backend, Qwen3_8Weights &weights, const G
 } // namespace
 
 Qwen3_8Weights loadQwen3_8Weights(metal::MetalBackend &backend, Qwen3_8Layout layout,
-                                  const QwenTargetFiles &files) {
-  const auto readFfn = [&](WeightFile &file, Qwen3_8LayerWeights &layer, const BlockTargetFormat &format) {
+                                  const QwenTargetFiles &files, const HybridQuantConfig &hybridConfig) {
+  const auto readFfn = [&](WeightFile &file, Qwen3_8LayerWeights &layer, const BlockTargetFormat &format, uint32_t layerIndex) {
+    // Phase 2 ANE Hybrid Quantization: conditional per-layer quantization loading
+    // ANE layers: Q4_K_M unrotated (takesPlaneViews() == true)
+    // GPU layers: PQ2_0 rotated (takesPlaneViews() == false)
+    (void)hybridConfig; // TODO: Use for format selection in future commits
+    (void)layerIndex;   // TODO: Use for conditional loading in future commits
+    
+    // TODO: Actual quantization format selection based on isAneLayer
+    // For now, load using existing format (will need GGUF loader modification)
     layer.gateProjection =
         format.projection(file, layout.intermediateSize, layout.hiddenSize, "mlp-gate");
     layer.upProjection =

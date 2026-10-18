@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DFlashDraft.hpp"
+#include "HybridQuantization.hpp"
 #include "QwenHybridLayout.hpp"
 #include "QwenTarget.hpp"
 #include "QwenTargetFiles.hpp"
@@ -75,6 +76,6 @@ using Qwen3_8Weights = QwenTargetWeights<Qwen3_8Layout, Qwen3_8LayerWeights>;
 
 [[nodiscard]] Qwen3_8Weights
 loadQwen3_8Weights(metal::MetalBackend &backend, Qwen3_8Layout layout,
-                   const QwenTargetFiles &files);
+                   const QwenTargetFiles &files, const HybridQuantConfig &hybridConfig = {});
 
 } // namespace splash::model

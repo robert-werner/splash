@@ -44,12 +44,12 @@ QwenVisionWeights loadVisionWeights(metal::MetalBackend &backend, WeightImages &
 namespace {
 
 TargetWeights readTarget(metal::MetalBackend &backend, const Qwen3_8Layout &layout,
-                         const QwenTargetFiles &files) {
-  return loadQwen3_8Weights(backend, layout, files);
+                         const QwenTargetFiles &files, const HybridQuantConfig &hybridConfig) {
+  return loadQwen3_8Weights(backend, layout, files, hybridConfig);
 }
 
 TargetWeights readTarget(metal::MetalBackend &backend, const Qwen3_6MoeLayout &layout,
-                         const QwenTargetFiles &files) {
+                         const QwenTargetFiles &files, const HybridQuantConfig &) {
   return loadQwen3_6MoeWeights(backend, layout, files);
 }
 
@@ -90,11 +90,11 @@ LoadedModel loadModel(metal::MetalBackend &backend,
         switch (result.descriptor.targetSource) {
         case TargetSource::Safetensors: {
           SafetensorsTargetLoader loader(backend, images, directory, layout);
-          return readTarget(backend, layout, std::ref(loader));
+          return readTarget(backend, layout, std::ref(loader), hybridConfig);
         }
         case TargetSource::Gguf: {
           GgufTargetLoader loader(backend, images, findTargetGguf(directory), layout);
-          return readTarget(backend, layout, std::ref(loader));
+          return readTarget(backend, layout, std::ref(loader), hybridConfig);
         }
         }
         throw std::invalid_argument("unknown target source");

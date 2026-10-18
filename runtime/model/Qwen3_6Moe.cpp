@@ -9,7 +9,8 @@ namespace {
 // Block images keep the routed experts of each projection as one tensor, the
 // shared expert's as another, and the router and the shared-expert scalar
 // gate in F32.
-void readFfn(WeightFile &file, Qwen3_6MoeLayerWeights &layer) {
+void readFfn(WeightFile &file, Qwen3_6MoeLayerWeights &layer, uint32_t layerIndex) {
+  (void)layerIndex; // Unused: MoE doesn't support hybrid quantization yet
   ops::BlockMoeWeights ffn;
   ffn.router = readQuantizedSegment(file, "router");
   ffn.gate.routed = readQuantizedSegment(file, "experts-gate");
@@ -29,7 +30,9 @@ loadQwen3_6MoeWeights(metal::MetalBackend &backend, Qwen3_6MoeLayout layout,
                       const QwenTargetFiles &files) {
   return loadQwenTarget<Qwen3_6MoeWeights>(
       backend, layout, files,
-      [](WeightFile &file, Qwen3_6MoeLayerWeights &layer, const BlockTargetFormat &) { readFfn(file, layer); });
+      [](WeightFile &file, Qwen3_6MoeLayerWeights &layer, const BlockTargetFormat &, uint32_t layerIndex) { 
+        readFfn(file, layer, layerIndex); 
+      });
 }
 
 } // namespace splash::model

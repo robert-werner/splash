@@ -74,7 +74,7 @@ readQwenTargetWeights(metal::MetalBackend &backend, const Layout &layout, Files 
     layer.inputNorm = format.norm(file, layout.hiddenSize, "input-norm");
     layer.mixer = readQwenMixer(file, format, layout, fullAttention);
     layer.postAttentionNorm = format.norm(file, layout.hiddenSize, "post-attention-norm");
-    readFfn(file, layer, format);
+    readFfn(file, layer, format, layerIndex);
     file.finish();
     result.files.push_back(file.record());
   }
