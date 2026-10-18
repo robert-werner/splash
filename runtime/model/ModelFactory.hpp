@@ -2,6 +2,7 @@
 
 #include "ops/Vision.hpp"
 #include "DFlashDraft.hpp"
+#include "HybridQuantization.hpp"
 #include "ModelDescriptor.hpp"
 #include "Qwen3_6Moe.hpp"
 #include "Qwen3_8.hpp"
@@ -107,12 +108,14 @@ void requireCompatibleModel(const LoadedModel &model);
 
 // Production loading is selected by the validated descriptor. There
 // is one shared engine and DFlash controller; only model execution differs.
+// hybridConfig enables per-layer quantization for ANE acceleration.
 [[nodiscard]] LoadedModel
 loadModel(metal::MetalBackend &backend,
           const std::filesystem::path &root,
           const ModelDescriptor &descriptor,
           bool textOnly = false,
-          bool lazyDraft = false);
+          bool lazyDraft = false,
+          const HybridQuantConfig &hybridConfig = {});
 
 // The FFN layers of a dense target, which the prefill FFN's Neural Engine
 // split (ops::AneFfn) may take; none for another target.

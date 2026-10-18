@@ -1,6 +1,7 @@
 #include "ModelFactory.hpp"
 #include "model/DraftCheckpoint.hpp"
 #include "model/GgufTarget.hpp"
+#include "model/HybridQuantization.hpp"
 #include "model/QwenTargetLoader.hpp"
 #include "model/SafetensorsTarget.hpp"
 #include "model/VisionLoader.hpp"
@@ -64,7 +65,8 @@ LoadedModel loadModel(metal::MetalBackend &backend,
                               const std::filesystem::path &root,
                               const ModelDescriptor &descriptor,
                               bool textOnly,
-                              bool lazyDraft) {
+                              bool lazyDraft,
+                              const HybridQuantConfig &hybridConfig) {
   LoadedModel result;
   result.descriptor = descriptor;
   if (!result.descriptor.valid())
@@ -75,6 +77,13 @@ LoadedModel loadModel(metal::MetalBackend &backend,
   // the vision tower's and the draft's here, the target's by its loader.
   const auto vision = planVisionLoader(root, result.descriptor);
   DraftCheckpointLoader draft(backend, images, root / "draft", result.descriptor.draft);
+  
+  // Validate hybridConfig against model layer count if enabled
+  if (hybridConfig.enabled()) {
+    const uint32_t totalLayers = std::visit([](const auto &layout) { return layout.layers; }, result.descriptor.target);
+    hybridConfig.validate(totalLayers);
+  }
+  
   result.target = std::visit(
       [&](const auto &layout) -> TargetWeights {
         const std::filesystem::path directory = root / "target";

@@ -464,8 +464,17 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
   model::LoadedModel loaded;
   try {
     const auto started = AwakeClock::now();
-    loaded = model::loadModel(*backend, config.modelRoot, config.model, config.visionTextOnly, config.lazyDraftLoading);
+    // Phase 2: ANE Hybrid Quantization - convert aneLayerIndices to HybridQuantConfig
+    model::HybridQuantConfig hybridConfig;
+    hybridConfig.aneLayerIndices = config.aneLayerIndices;
+    loaded = model::loadModel(*backend, config.modelRoot, config.model, config.visionTextOnly, config.lazyDraftLoading, hybridConfig);
     loaded.visionSkipped = config.visionTextOnly && loaded.descriptor.hasVision();
+    
+    // Log hybrid quantization configuration if enabled
+    if (hybridConfig.enabled()) {
+      const uint32_t totalLayers = std::visit([](const auto &layout) { return layout.layers; }, loaded.descriptor.target);
+      logLine("ANE Hybrid Quantization: ", describeHybridConfig(hybridConfig, totalLayers));
+    }
     requireLoadedModel(loaded);
     const std::chrono::duration<double> loading = AwakeClock::now() - started;
     logLine("Weights loaded in ", std::fixed, std::setprecision(2),
