@@ -516,20 +516,18 @@ struct FmtPQ20 {
   static uint4 codes(Chunk q) { return (uint4(q) >> uint4(0, 4, 8, 12)) & 0x00030003u; }
   static QuantCoef coef(Meta mt, ushort) { return {float2(float(as_type<half>(mt)))}; }
 };
-// PTQ1_0 (Prism ML's GGUFs, ggml type 143): plane0 1-bit binary codes; meta the half d of the 128-element native
-// block, four groups. value = d * (2*q - 1) where q in {0, 1}, giving values in {-d, +d}.
+// PTQ1_0 (Prism ML's GGUFs, ggml type 143): 28-byte native blocks of 128 ternary weights, the trits base-3
+// codewords over qs[24] and qh[2] and d the block's fp16 amax (model/GgufFile.hpp's traits, and
+// shared/gguf_repack.metal for the codewords). The repack decodes those trits into the 2-bit codes these planes
+// hold, so a block decodes exactly as PQ2_0's does: value = d * (q - 1), q in 0..3.
 struct FmtPTQ10 {
   QUANT_FORMAT(GGUF_FMT_PTQ10, QuantLinear, 1, 32, false);
-  struct Payload { uint a; }; typedef uint Chunk; typedef ushort Meta;
-  static Payload load(device uchar *p0, device uchar *) { return {*((device uint *)p0)}; }
+  struct Payload { uint2 a; }; typedef uint Chunk; typedef ushort Meta;
+  static Payload load(device uchar *p0, device uchar *) { return {*((device uint2 *)p0)}; }
   static Meta loadMeta(device uchar *m) { return *((device ushort *)m); }
-  static Chunk chunk(Payload w, ushort c) { return quant_spread1(w.a >> (8 * c)); }
-  static Chunk loadChunk(device uchar *p0, device uchar *, ushort c) { return quant_spread1(*((device uchar *)(p0 + c))); }
-  // Extract 1-bit codes {0, 1} and convert to {0, 2} for Zero=1 offset
-  static uint4 codes(Chunk q) { 
-    uint4 bits = (uint4(q) >> uint4(0, 2, 4, 6)) & 0x00010001u;
-    return bits * 2u;  // {0, 2}, with Zero=1 gives scale*(code-1) = scale*{-1, +1}
-  }
+  static Chunk chunk(Payload w, ushort c) { return quant_spread2(w.a[c >> 1] >> (16 * (c & 1))); }
+  static Chunk loadChunk(device uchar *p0, device uchar *, ushort c) { return quant_spread2(*((device ushort *)(p0 + 2 * c))); }
+  static uint4 codes(Chunk q) { return (uint4(q) >> uint4(0, 4, 8, 12)) & 0x00030003u; }
   static QuantCoef coef(Meta mt, ushort) { return {float2(float(as_type<half>(mt)))}; }
 };
 

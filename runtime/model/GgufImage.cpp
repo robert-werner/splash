@@ -74,30 +74,24 @@ public:
     image_.repack(std::move(repack));
   }
 
-  // Quantized FFN tensor with conditional loading based on ANE/GPU mode.
-  // When isAneLayer is true, loads unrotated Q4_K for ANE.
-  // When isAneLayer is false, loads rotated PQ2_0 for GPU.
-  void quantizedFfn(const std::string &name, uint64_t rows, uint64_t columns, bool isAneLayer) {
+  // Quantized FFN tensor of a dense layer. Both of Prism ML's rotated
+  // formats run here: PQ2_0 and PTQ1_0, which decode to the same weights. The
+  // layer's placement in the hybrid config does not choose its format (the
+  // GGUF does, and per-layer selection is not implemented): it only says
+  // where the user means the layer to run, and a rotated layer there is
+  // declined by the ANE FFN split at runtime (Projection::takesPlaneViews)
+  // rather than failing the load.
+  void quantizedFfn(const std::string &name, uint64_t rows, uint64_t columns) {
     const GgufTensor *tensor = find(name, quantizedType);
     if (!tensor) return;
     if (tensor->rows() != rows || tensor->columns() != columns) throw GgufError("unexpected shape for " + name);
-    
+
     const uint32_t format = imageFormat(tensor->type);
-    
-    // Verify format matches the expected mode:
-    // ANE layers should use Q4_K (unrotated) or PTQ1_0 (unrotated), GPU layers should use PQ2_0 (rotated)
-    if (isAneLayer) {
-      // For ANE: expect Q4_K or PTQ1_0 format (both unrotated)
-      if (format != GGUF_FMT_Q4K && format != GGUF_FMT_PTQ10) {
-        throw GgufError("ANE layer " + name + " expected Q4_K or PTQ1_0 format, got " + std::to_string(format));
-      }
-    } else {
-      // For GPU: expect PQ2_0 format (rotated)
-      if (format != GGUF_FMT_PQ20) {
-        throw GgufError("GPU layer " + name + " expected PQ2_0 format, got " + std::to_string(format));
-      }
-    }
-    
+    // The formats a dense FFN tensor may be of: the two Prism ML GGUFs keep
+    // their FFN weights in, and Q4_K, the unrotated format the ANE runs.
+    if (format != GGUF_FMT_PQ20 && format != GGUF_FMT_PTQ10 && format != GGUF_FMT_Q4K)
+      throw GgufError(name + " must be PQ2_0, PTQ1_0 or Q4_K, got " + std::to_string(format));
+
     Repack repack = image_.planes(format, rows, columns, name);
     repack.sources.push_back(tensorRows(*tensor, rows, ggufRowBytes(kQuantFormats[format], columns)));
     image_.repack(std::move(repack));
@@ -290,7 +284,7 @@ private:
 std::string prefix(uint32_t layer) { return "blk." + std::to_string(layer) + "."; }
 
 Image layerImage(const GgufFile &file, const QwenTargetDimensions &g, std::vector<std::string> &problems,
-                 uint32_t index, const HybridQuantConfig &hybridConfig) {
+                 uint32_t index) {
   const std::string p = prefix(index);
   const bool full = g.isFullAttentionLayer(index);
   Builder b(file, g, problems, "layer-" + std::to_string(index) + ".bin", index, full ? 1u : 0u);
@@ -327,11 +321,9 @@ Image layerImage(const GgufFile &file, const QwenTargetDimensions &g, std::vecto
     b.quantized(p + "ffn_down_shexp.weight", g.hiddenSize, width);
     b.floatTensor(p + "ffn_gate_inp_shexp.weight", 1, g.hiddenSize);
   } else {
-    // Conditional loading for FFN layers based on hybridConfig
-    const bool isAneLayer = hybridConfig.isAneLayer(index);
-    b.quantizedFfn(p + "ffn_gate.weight", g.intermediateSize, g.hiddenSize, isAneLayer);
-    b.quantizedFfn(p + "ffn_up.weight", g.intermediateSize, g.hiddenSize, isAneLayer);
-    b.quantizedFfn(p + "ffn_down.weight", g.hiddenSize, g.intermediateSize, isAneLayer);
+    b.quantizedFfn(p + "ffn_gate.weight", g.intermediateSize, g.hiddenSize);
+    b.quantizedFfn(p + "ffn_up.weight", g.intermediateSize, g.hiddenSize);
+    b.quantizedFfn(p + "ffn_down.weight", g.hiddenSize, g.intermediateSize);
   }
   return b.finish();
 }
@@ -340,7 +332,8 @@ Image layerImage(const GgufFile &file, const QwenTargetDimensions &g, std::vecto
 // every tensor the images of a dense target repack, whose segments read
 // H (D x) (ops::InputRotation) while float segments (alpha/beta in F32) read
 // x as it is, and the token table, which the rotated gather decodes from
-// PQ2_0 rows, with the GDN value heads of the rotated inputs grouped.
+// PQ2_0 or PTQ1_0 rows (both of Prism ML's rotated formats), with the GDN
+// value heads of the rotated inputs grouped.
 void requireRotation(const GgufFile &file, const QwenTargetDimensions &g, const std::vector<Image> &images) {
   const GgufRotation &rotation = *file.rotation();
   if (g.ffnKind == QwenFfnKind::SparseMoe) throw GgufError("rotated weights are supported for dense targets only");
@@ -352,9 +345,10 @@ void requireRotation(const GgufFile &file, const QwenTargetDimensions &g, const 
       for (const TensorRows &source : repack.sources) repacked.insert(source.name);
   if (rotation.weights != repacked)
     throw GgufError("the rotation must name every quantized tensor of the target and nothing else");
+  const GgufTensor &embedding = file.require("token_embd.weight");
   if (rotation.tables != std::set<std::string, std::less<>>{"token_embd.weight"} ||
-      file.require("token_embd.weight").type != ggml::kPQ2_0)
-    throw GgufError("the rotation's one token table must be token_embd.weight in PQ2_0");
+      (embedding.type != ggml::kPQ2_0 && embedding.type != ggml::kPTQ1_0))
+    throw GgufError("the rotation's one token table must be token_embd.weight in PQ2_0 or PTQ1_0");
 }
 
 } // namespace
@@ -490,13 +484,12 @@ void requireMetadata(const GgufMetadata &metadata, const QwenTargetDimensions &g
   if (!mismatched.empty()) throw GgufError("GGUF metadata does not match the target: " + mismatched);
 }
 
-std::vector<Image> planImages(const GgufFile &file, const QwenTargetDimensions &geometry,
-                               const HybridQuantConfig &hybridConfig) {
+std::vector<Image> planImages(const GgufFile &file, const QwenTargetDimensions &geometry) {
   requireMetadata(file.metadata(), geometry);
   std::vector<std::string> problems;
   std::vector<Image> images;
   for (uint32_t layer = 0; layer < geometry.layers; ++layer)
-    images.push_back(layerImage(file, geometry, problems, layer, hybridConfig));
+    images.push_back(layerImage(file, geometry, problems, layer));
   Builder head(file, geometry, problems, "head.bin", geometry.layers, 2);
   head.floatNorm("output_norm.weight", geometry.hiddenSize);
   head.quantized("output.weight", geometry.vocabularySize, geometry.hiddenSize);

@@ -32,6 +32,19 @@ static inline void gguf_copy_native(device const uchar *blk, uint j, constant Qu
   for (uint i = 0; i < f.plane1_bytes; ++i) out1[i] = blk[at1 + f.plane1_bytes * j + i];
   if (j == 0) for (uint i = 0; i < f.meta_bytes; ++i) meta[i] = blk[atMeta + i];
 }
+// PTQ1_0's weight e of a 128-weight native block {qs[24], qh[2], d}, as the 2-bit code {0, 1, 2} the planes hold.
+// Each byte is a base-3 codeword rescaled to ceil(q * 256 / 243), so a digit is extracted by multiply-and-shift
+// rather than % 3; digits are most significant first, and the codewords are staged (16 bytes of 5 trits, then 8,
+// then the 2 bytes of 4), byte index fastest.
+static inline uchar ptq10_code(device const uchar *blk, uint e) {
+  const uint pow3[5] = {1u, 3u, 9u, 27u, 81u};
+  uint at, n;
+  if (e < 80) { n = e / 16; at = e % 16; }
+  else if (e < 120) { n = (e - 80) / 8; at = 16 + (e - 80) % 8; }
+  else { n = (e - 120) / 2; at = 24 + (e - 120) % 2; }
+  return uchar(((uint(blk[at]) * pow3[n] & 0xFFu) * 3u) >> 8);   // 0, 1 or 2
+}
+
 kernel void gguf_repack(device const uchar *src [[buffer(0)]], device uchar *dst [[buffer(1)]],
                       constant GgufRepackParams &p [[buffer(2)]], uint t [[thread_position_in_grid]]) {
   const uint G = p.input_size / 32;
@@ -122,6 +135,12 @@ kernel void gguf_repack(device const uchar *src [[buffer(0)]], device uchar *dst
       for (uint e = 0; e < 32; ++e) lo[quant_slot(e)] = (blk[2 + 8 * j + e / 4] >> (2 * (e % 4))) & 3;
       gguf_store_bits(lo, 2, out0);
       if (j == 0) { meta[0] = blk[0]; meta[1] = blk[1]; }
+      break;
+    }
+    case GGUF_FMT_PTQ10: {   // block_ptq1_0 {qs[24], qh[2], d}: 128 ternary weights, decoded to 2-bit codes
+      for (uint e = 0; e < 32; ++e) lo[quant_slot(e)] = ptq10_code(blk, 32 * j + e);
+      gguf_store_bits(lo, 2, out0);
+      if (j == 0) { meta[0] = blk[26]; meta[1] = blk[27]; }
       break;
     }
     case GGUF_FMT_IQ4NL: case GGUF_FMT_Q40: case GGUF_FMT_Q41: case GGUF_FMT_MXFP4: {   // the meta unit, then qs[16]

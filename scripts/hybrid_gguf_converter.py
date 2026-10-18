@@ -120,7 +120,7 @@ class GGUFTensor:
             GGML_TYPE_IQ2_S: (256, 82),    # 256 elements, 82 bytes
             GGML_TYPE_IQ4_XS: (256, 136),  # 256 elements, 136 bytes
             GGML_TYPE_IQ1_M: (256, 56),    # 256 elements, 56 bytes
-            GGML_TYPE_PTQ1_0: (128, 18),   # 128 elements, 18 bytes
+            GGML_TYPE_PTQ1_0: (128, 28),   # 128 elements, 28 bytes (qs[24] + qh[2] + fp16 d)
             GGML_TYPE_PQ2_0: (128, 34),    # 128 elements, 34 bytes
         }
         

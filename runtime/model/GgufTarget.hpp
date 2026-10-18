@@ -23,10 +23,8 @@ namespace splash::model {
 class GgufTargetLoader final {
 public:
   // Plans every image from the GGUF's metadata once.
-  // With hybridConfig enabled, supports loading different quantization formats
-  // per layer: unrotated Q4_K_M for ANE layers, rotated PQ2_0 for GPU layers.
   GgufTargetLoader(metal::MetalBackend &backend, WeightImages &images, const std::filesystem::path &path,
-                   const QwenTargetDimensions &geometry, const HybridQuantConfig &hybridConfig = {});
+                   const QwenTargetDimensions &geometry);
   GgufTargetLoader(const GgufTargetLoader &) = delete;
   GgufTargetLoader &operator=(const GgufTargetLoader &) = delete;
 
@@ -36,7 +34,6 @@ public:
   // The input rotation of a Prism ML GGUF, which planImages checked names
   // every quantized tensor of the target and its token table.
   [[nodiscard]] const std::optional<GgufRotation> &rotation() const noexcept { return rotation_; }
-  [[nodiscard]] const HybridQuantConfig &hybridConfig() const noexcept { return hybridConfig_; }
 
 private:
   // The GGUF and its images, which their writers share.
@@ -49,9 +46,8 @@ private:
 
   metal::MetalBackend &backend_;
   WeightImages &images_;
-  std::shared_ptr<Planned> planned_;
+  // The geometry planImages checks.
   std::optional<GgufRotation> rotation_;
-  HybridQuantConfig hybridConfig_;
 };
 
 } // namespace splash::model

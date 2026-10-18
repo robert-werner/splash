@@ -127,9 +127,33 @@ struct GgufEmbedPQ20 {
     return float(int(q) - 1) * float(gguf_half(block, D));
   }
 };
+// block_ptq1_0 {qs[24], qh[2], d}: 128 ternary weights as base-3 codewords, d their fp16 amax. Each byte holds a
+// codeword the encoder rescaled to ceil(q * 256 / 243), so a trit digit comes out by multiply-and-shift rather than
+// % 3; digits are most significant first, and the codewords are staged (16 bytes of 5 trits, then 8, then qh's 2
+// bytes of 4), byte index fastest (shared/gguf_repack.metal decodes the same codewords into 2-bit codes).
+struct GgufEmbedPTQ10 {
+  enum : uint { Weights = 128, Bytes = 28, Qs = 24, D = 26 };
+  __attribute__((always_inline)) static float decode(device const uchar *block, uint dim) {
+#pragma clang fp reassociate(off)
+    const uint e = dim % Weights;
+    const uint pow3[5] = {1, 3, 9, 27, 81};
+    uint at, n;
+    if (e < 80) {
+      n = e / 16;
+      at = e % 16;
+    } else if (e < 120) {
+      n = (e - 80) / 8;
+      at = 16 + (e - 80) % 8;
+    } else {
+      n = (e - 120) / 2;
+      at = Qs + (e - 120) % 2;
+    }
+    const uint trit = ((uint(block[at]) * pow3[n] & 0xFFu) * 3u) >> 8;   // 0, 1 or 2
+    return float(int(trit) - 1) * float(gguf_half(block, D));
+  }
+};
 // block_iq4_nl: block_q4_0's layout, whose codes index the IQ4_NL values.
 struct GgufEmbedIQ4NL {
-  enum : uint { Weights = 32, Bytes = 18, D = 0, Codes = 2 };
   __attribute__((always_inline)) static float decode(device const uchar *block, uint dim) {
 #pragma clang fp reassociate(off)
     const uint l = dim % Weights;

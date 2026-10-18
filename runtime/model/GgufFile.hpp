@@ -52,7 +52,7 @@ inline constexpr std::array<std::pair<uint32_t, GgmlTypeTraits>, 33> kGgmlTypes{
     {23, {"IQ4_XS", 256, 136}}, {24, {"I8", 1, 1}},         {25, {"I16", 1, 2}},
     {26, {"I32", 1, 4}},        {27, {"I64", 1, 8}},        {28, {"F64", 1, 8}},
     {29, {"IQ1_M", 256, 56}},   {30, {"BF16", 1, 2}},       {39, {"MXFP4", 32, 17}},
-    {40, {"NVFP4", 64, 36}},    {142, {"PQ2_0", 128, 34}},  {143, {"PTQ1_0", 128, 18}},
+    {40, {"NVFP4", 64, 36}},    {142, {"PQ2_0", 128, 34}},  {143, {"PTQ1_0", 128, 28}},
 }};
 
 // nullptr for type ids this parser does not know.

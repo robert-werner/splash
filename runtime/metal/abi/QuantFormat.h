@@ -194,8 +194,9 @@ QUANT_CONSTANT QuantFormat kQuantFormats[GGUF_FMT_COUNT] = {
     // 16-bit floats in native blocks of 256 GGUF values; meta: g, which the repack writes.
     {30, 256, 512, 64, 0, 4, 8, "bf16"},
     {1, 256, 512, 64, 0, 4, 8, "f16"},
-    // Prism's block_ptq1_0, one d per 128 elements; meta: d
-    {143, 128, 18, 4, 0, 2, 4, "ptq10"},
+    // Prism's block_ptq1_0 {qs[24], qh[2], d}, 128 ternary weights in 28 bytes; meta: d. The repack decodes
+    // the base-3 trits into 2-bit codes, so the planes are PQ2_0's.
+    {143, 128, 28, 8, 0, 2, 4, "ptq10"},
 };
 
 // The format that stores a GGUF tensor type (or a loader's);
