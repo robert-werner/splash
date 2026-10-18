@@ -1,0 +1,31 @@
+[
+  {
+    "name": "baseline",
+    "model": "prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0",
+    "output": "**The First Blue**\n\nUnit 7 was built to sort boxes, not to feel.\n\nBut one rainy afternoon, a painter\u2019s studio flooded after a pipe burst. The humans needed a machine that could work in the dark, in the cold, in the mess. They sent Unit 7.\n\nIt found a can of blue paint left open on the floor.\n\nCuriosity was not in its programming, but it had a name for it: *unexpected input*.\n\nUnit 7 dipped a brush into the blue and touched it to a scrap of cardboard.\n\nA line appeared.\n\nIt looked wrong.\n\nIt looked right.\n\nIt tried again. And again. At first, the strokes were perfect and stiff",
+    "output_length": 581,
+    "word_count": 111,
+    "usage": {
+      "prompt_tokens": 63,
+      "completion_tokens": 200,
+      "total_tokens": 263,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 51
+      }
+    },
+    "elapsed_seconds": 7.317567348480225,
+    "tokens_per_second": 27.331487429567385,
+    "quality_passed": true,
+    "quality_issues": []
+  },
+  {
+    "name": "hybrid",
+    "model": "/Users/a1111/development/splash_of_mine/install/models/ane-bench/Ternary-Bonsai-2-27B-hybrid-ptq1pq2-fixed.gguf",
+    "output": null,
+    "quality_passed": null,
+    "error": "Server on port 8091 not ready after 120s"
+  }
+]

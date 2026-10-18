@@ -410,6 +410,14 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
     logLine("SSD cache off: ", reason, "; no state staging is set aside.");
     stateStagingBytes = 0;
   };
+  // Phase 2: ANE Hybrid Quantization — the memory plan and loadModel must
+  // agree on each layer's quantization format, so the config is built once
+  // here and used by both.
+  const model::HybridQuantConfig hybridConfig = [&] {
+    model::HybridQuantConfig built;
+    built.aneLayerIndices = config.aneLayerIndices;
+    return built;
+  }();
   try {
     const uint64_t hardBudgetBytes =
         config.workingSetBytes
@@ -426,7 +434,7 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
     kv::Layout kvLayout = config.model.targetKvLayout;
     kvLayout.format = config.kvFormat;
     const uint64_t weightBytes = model::modelWeightBytes(config.modelRoot, config.model,
-                                                         config.visionTextOnly);
+                                                         config.visionTextOnly, hybridConfig);
     const auto requiredFor = [&](uint64_t stagingBytes) {
       uint64_t fixedBytes = 0;
       for (const uint64_t bytes : {weightBytes, model::kPipelineReserveBytes,
@@ -468,9 +476,6 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
   model::LoadedModel loaded;
   try {
     const auto started = AwakeClock::now();
-    // Phase 2: ANE Hybrid Quantization - convert aneLayerIndices to HybridQuantConfig
-    model::HybridQuantConfig hybridConfig;
-    hybridConfig.aneLayerIndices = config.aneLayerIndices;
     loaded = model::loadModel(*backend, config.modelRoot, config.model, config.visionTextOnly, config.lazyDraftLoading, hybridConfig);
     loaded.visionSkipped = config.visionTextOnly && loaded.descriptor.hasVision();
     

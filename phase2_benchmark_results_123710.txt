@@ -1,0 +1,8 @@
+=== Phase 2 ANE Hybrid Benchmark ===
+Model: Ternary-Bonsai-2-27B-PQ2_0
+Target ANE Layers: 0,2,4,8,10,14 (6 of 16)
+Baseline: 62.9 tok/s single, 143.5 tok/s batch=4
+Target: 81.8 tok/s single (+30%), 186.6 tok/s batch=4 (+30%)
+
+[Test 1/4] Baseline Performance (no ANE)
+Command: serve-native without --ane-layers

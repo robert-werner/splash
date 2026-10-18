@@ -1,0 +1,7 @@
+{
+  "owner": "test",
+  "repo": "hybrid-test",
+  "variant": "PQ1PQ2",
+  "local_path": "/Users/a1111/development/splash_of_mine/.test_hybrid_model",
+  "tokenizer_path": "/Users/a1111/development/splash_of_mine/.test_hybrid_model/tokenizer"
+}

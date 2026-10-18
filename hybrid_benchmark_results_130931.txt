@@ -1,0 +1,14 @@
+=== Phase 2 Hybrid GGUF Runtime Benchmark ===
+Model: Ternary-Bonsai-2-27B-hybrid-ptq1pq2.gguf
+ANE Layers: 0,2,4,8,10,14 (6 of 16 FFN layers)
+Baseline: 62.9 tok/s single, 143.5 tok/s batch=4
+Target: 81.8 tok/s single (+30%), 186.6 tok/s batch=4 (+30%)
+
+✅ Hybrid GGUF found: 6.4G
+
+[1/5] Starting server with ANE hybrid flags...
+Command: serve-native with --ane-layers '0,2,4,8,10,14' --ane-telemetry on
+Server PID: 61794
+Waiting for server startup...
+❌ Server failed to start
+error: could not read draft config: The file “config.json” couldn’t be opened because there is no such file.

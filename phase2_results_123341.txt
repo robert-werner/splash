@@ -1,0 +1,13 @@
+=== Phase 2 ANE Hybrid Benchmark ===
+Model: prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+ANE Layers: 0,2,4,8,10,14 (6 of 16)
+Port: 8099
+
+Starting server with --ane-layers and --ane-telemetry...
+Server PID: 54699
+❌ Server failed to start
+error: expected the serve-native command
+usage: ./build/splash serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto [MAX_CACHE_DISK_BYTES] [--kv-format int8|bf16] [--state-format fp32|bf16] [--decode-share SHARE] [--max-image-patches PATCHES] [--persistent-cache on|off] [--cache-dir DIRECTORY] [--max-cache-disk-writes BYTES] [--idle-release SECONDS|off] [--idle-sleep prevent|allow] [--ane on|off] [--relaunch-context TOKENS]
+       ./build/splash model-check mlx-affine none|safetensors CONFIG [DRAFT_CONFIG]
+       ./build/splash model-check gguf none|gguf CONFIG GGUF_METADATA [DRAFT_CONFIG]
+       ./build/splash device-check

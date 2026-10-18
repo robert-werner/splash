@@ -28,3 +28,4 @@ Splash model prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 is already installed in /U
 10:17:17 Engine restarted
 10:17:18 Engine failed · native protocol reached EOF
 10:17:18 Engine stopped · the inference engine failed 3 times in a row, each within 60 s of starting (native protocol reached EOF); Splash stopped restarting it. Set SPLASH_CRASH_TRACE=1 to record a crash trace. Restart the Splash server after fixing the cause.
+15:16:07 Stopping · releasing engine resources

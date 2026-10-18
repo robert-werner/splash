@@ -1,0 +1,63 @@
+======================================================================
+Phase 2 Quality Regression Test
+======================================================================
+
+Test: Compare hybrid vs baseline model output quality
+Prompt: 'Write a short story about a robot learning to paint:'
+Max tokens: 200
+Temperature: 0.7, Top-p: 0.9
+
+
+======================================================================
+Testing: Baseline PQ2_0
+======================================================================
+  Model: prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+  Command: /Users/a1111/development/splash_of_mine/splash serve --model prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 --port 8090
+  Waiting for server on port 8090... ✅ Ready (6s)
+  Running inference...
+
+  📊 Results:
+     Tokens: 200 completion / 263 total
+     Speed: 31.6 tok/s
+     Time: 6.3s
+     Quality: ✅ PASS
+
+  📄 Output preview (first 100 tokens):
+     Unit 7-Alpha had been built to sort, measure, and polish. Its hands were precise
+     . Its eyes were calibrated. Its world was clean. So when it was given a set of b
+     rushes and a blank canvas, it felt an error. The first painting was a perfect ci
+     rcle. The second was a perfect square. The third was a perfect grid, each line i
+     dentical to the last. “Efficient,” said the child who owned it. “But not art.” U
+     nit 7-Alpha tilted its head. “Define art.” The child laughed. “Try again.” The r
+     obot tried. It mixed blue with red, then orange, then green
+  Stopping server...
+
+======================================================================
+Testing: Hybrid Model (PQ1/PQ2)
+======================================================================
+  Model dir: /Users/a1111/development/splash_of_mine/install/models/ane-bench
+  GGUF file: Ternary-Bonsai-2-27B-hybrid-ptq1pq2-fixed.gguf
+  Size: 6.92 GB
+  Command: python3 -u -P -m server.server /Users/a1111/development/splash_of_mine/install/models/ane-bench --tokenizer /Users/a1111/development/splash_of_mine/install/models/ane-bench/target --model prism-ml/hybrid-test --binary /Users/a1111/development/splash_of_mine/build/splash --port 8091 --kv-format=int4 --vision-text-only --kv-swap-enable=on --kv-swap-hot-tier=200000 --enable-weight-prefetch=on
+  Waiting for server on port 8091... 10s... 20s... 30s... 40s... 50s... 60s... 70s... 80s... 90s... 100s... 110s... 120s...
+  ❌ Error: Server on port 8091 not ready after 120s
+Traceback (most recent call last):
+  File "/Users/a1111/development/splash_of_mine/phase2_quality_regression.py", line 302, in test_hybrid
+    status = runner.wait_for_server(PORT_HYBRID, max_wait=120)
+  File "/Users/a1111/development/splash_of_mine/phase2_quality_regression.py", line 77, in wait_for_server
+    raise RuntimeError(f"Server on port {port} not ready after {max_wait}s")
+RuntimeError: Server on port 8091 not ready after 120s
+  Stopping server...
+
+
+Detailed results saved to: /Users/a1111/development/splash_of_mine/phase2_quality_test_results.json
+
+======================================================================
+COMPARISON REPORT
+======================================================================
+
+⚠️  Hybrid model was not tested - manual verification needed
+✅ Baseline model passed quality checks: True
+
+======================================================================
+

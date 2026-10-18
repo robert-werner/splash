@@ -1,0 +1,18 @@
+=== Phase 2 Hybrid GGUF Runtime Benchmark ===
+Model: Ternary-Bonsai-2-27B-hybrid-ptq1pq2.gguf
+ANE Layers: 0,2,4,8,10,14 (6 of 16 FFN layers)
+Baseline: 62.9 tok/s single, 143.5 tok/s batch=4
+Target: 81.8 tok/s single (+30%), 186.6 tok/s batch=4 (+30%)
+
+✅ Hybrid GGUF found: 6.4G
+
+[1/5] Starting server with ANE hybrid flags...
+Command: serve-native with --ane-layers '0,2,4,8,10,14' --ane-telemetry on
+Server PID: 60035
+Waiting for server startup...
+❌ Server failed to start
+error: MODEL_DIRECTORY must hold the model's target/ and draft/ directories
+usage: ./build/splash serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto [MAX_CACHE_DISK_BYTES] [--kv-format int8|bf16] [--state-format fp32|bf16] [--decode-share SHARE] [--max-image-patches PATCHES] [--persistent-cache on|off] [--cache-dir DIRECTORY] [--max-cache-disk-writes BYTES] [--idle-release SECONDS|off] [--idle-sleep prevent|allow] [--ane on|off] [--relaunch-context TOKENS]
+       ./build/splash model-check mlx-affine none|safetensors CONFIG [DRAFT_CONFIG]
+       ./build/splash model-check gguf none|gguf CONFIG GGUF_METADATA [DRAFT_CONFIG]
+       ./build/splash device-check
