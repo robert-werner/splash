@@ -16,10 +16,20 @@ std::filesystem::path findTargetGguf(const std::filesystem::path &directory) {
 }
 
 GgufTargetLoader::GgufTargetLoader(metal::MetalBackend &backend, WeightImages &images,
-                                   const std::filesystem::path &path, const QwenTargetDimensions &geometry)
-    : backend_(backend), images_(images), planned_(std::make_shared<Planned>(path)) {
+                                   const std::filesystem::path &path, const QwenTargetDimensions &geometry,
+                                   const HybridQuantConfig &hybridConfig)
+    : backend_(backend), images_(images), planned_(std::make_shared<Planned>(path)), hybridConfig_(hybridConfig) {
   const GgufFile file(planned_->source);
   rotation_ = file.rotation();
+  
+  // Validate hybridConfig against model geometry if enabled
+  if (hybridConfig_.enabled()) {
+    hybridConfig_.validate(geometry.layers);
+  }
+  
+  // TODO Phase 2: planImages needs to be extended to accept hybridConfig
+  // and conditionally plan Q4_K_M (unrotated) for ANE layers vs PQ2_0 (rotated) for GPU layers.
+  // For now, plan with default quantization.
   planned_->images = gguf::planImages(file, geometry);
 }
 

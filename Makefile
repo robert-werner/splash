@@ -258,8 +258,9 @@ ENGINE_CPP_SOURCES := \
 	runtime/engine/Scheduler.cpp \
 	runtime/engine/DynamicBatching.cpp \
 	runtime/engine/PrefillChunking.cpp \
-	runtime/engine/MemoryTelemetry.cpp \
-	runtime/engine/Cache.cpp \
+		runtime/engine/MemoryTelemetry.cpp \
+		runtime/engine/AneTelemetry.cpp \
+		runtime/engine/Cache.cpp \
 	runtime/engine/WriteBehind.cpp \
 	runtime/engine/Engine.cpp \
 	runtime/engine/MemoryGovernor.cpp \

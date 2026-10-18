@@ -510,17 +510,18 @@ namespace {
 
 // Helper to collect weight buffers from a projection
 void collectProjectionWeights(const ops::Projection &projection,
-                              std::vector<const void*> & /* pointers */,
-                              std::vector<size_t> & /* sizes */,
+                              std::vector<const void*> &pointers,
+                              std::vector<size_t> &sizes,
                               size_t &totalBytes) {
-  // ops::Projection encapsulates weight buffers; extract via shape
-  const auto shape = projection.shape();
-  if (shape.outputSize > 0 && shape.inputSize > 0) {
-    // Estimate weight size based on projection dimensions
-    // This is a conservative estimate; actual buffer access would require
-    // extending ops::Projection API to expose underlying MetalBuffer
-    const size_t estimatedSize = uint64_t{shape.outputSize} * shape.inputSize * 2; // 2 bytes for typical quant
-    totalBytes += estimatedSize;
+  const metal::MetalBuffer *buffer = projection.weightsBuffer();
+  if (buffer && *buffer) {
+    void *contents = buffer->contents();
+    uint64_t sizeBytes = buffer->sizeBytes();
+    if (contents && sizeBytes > 0) {
+      pointers.push_back(contents);
+      sizes.push_back(sizeBytes);
+      totalBytes += sizeBytes;
+    }
   }
 }
 

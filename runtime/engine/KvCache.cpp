@@ -95,6 +95,25 @@ KvCache::find(uint64_t parentBlock, std::span<const uint32_t> tokens,
     // Hashes filter candidates; equality requires the complete key.
     if (!entry.poisoned && entry.parent == parentBlock && entry.identity == identity &&
         std::equal(entry.tokens.begin(), entry.tokens.end(), tokens.begin())) {
+      
+      // Phase 3: Page fault handler - synchronously reload swapped pages
+      if (entry.page != noPage && asyncSwap_ && asyncSwap_->isSwapped(entry.page)) {
+        // Page is swapped to SSD, must reload synchronously before access
+        // Allocate destination buffer for page data (estimate 4 MiB per page)
+        constexpr size_t pageBytes = 4 * 1024 * 1024;
+        std::vector<std::byte> buffer(pageBytes);
+        
+        // Synchronous reload blocks until complete
+        const bool loaded = asyncSwap_->loadPageSync(entry.page, buffer);
+        if (!loaded) {
+          // Failed to reload swapped page - treat as cache miss
+          return std::nullopt;
+        }
+        
+        // Page successfully reloaded, mark as no longer swapped
+        // (AsyncKvSwap handles internal state cleanup via loadPageSync)
+      }
+      
       return BlockMatch{entry.id, entry.page};
     }
   }
@@ -111,6 +130,22 @@ KvCache::BlockMatch KvCache::insert(uint64_t parentBlock,
   if (physicalPage >= pool_.pageCount()) {
     throw std::out_of_range("KV cache physical page is out of range");
   }
+  
+  // Phase 3: Page fault handler before lookup - check if parent page is swapped
+  if (parentBlock && asyncSwap_) {
+    const Block &parent = block(parentBlock);
+    if (parent.page != noPage && asyncSwap_->isSwapped(parent.page)) {
+      // Parent page is swapped, must reload synchronously
+      constexpr size_t pageBytes = 4 * 1024 * 1024;
+      std::vector<std::byte> buffer(pageBytes);
+      
+      const bool loaded = asyncSwap_->loadPageSync(parent.page, buffer);
+      if (!loaded) {
+        throw std::runtime_error("Failed to reload swapped parent page in KV cache insert");
+      }
+    }
+  }
+  
   if (auto existing = find(parentBlock, tokens, identity)) {
     BlockMatch result{existing->id, existing->physicalPage};
     if (existing->physicalPage == noPage) {

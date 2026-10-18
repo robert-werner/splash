@@ -122,6 +122,12 @@ public:
   // a view, on kernel instances of their own (Linear::add).
   [[nodiscard]] uint32_t planeInputs() const noexcept { return planeInputs_; }
   [[nodiscard]] uint32_t planeInputSize() const noexcept { return planeInputs_ ? planeInputs_ : inputSize; }
+  // Returns the primary MetalBuffer holding this projection's weight data.
+  // For weight prefetch: returns plane0 of the first segment, which contains
+  // the bulk of the weight data. Returns an empty buffer if no segments exist.
+  [[nodiscard]] const metal::MetalBuffer *weightsBuffer() const noexcept {
+    return weights_.segments.empty() ? nullptr : &weights_.segments[0].plane0;
+  }
 
   uint32_t outputSize = 0;
   uint32_t inputSize = 0;

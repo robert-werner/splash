@@ -93,7 +93,7 @@ LoadedModel loadModel(metal::MetalBackend &backend,
           return readTarget(backend, layout, std::ref(loader), hybridConfig);
         }
         case TargetSource::Gguf: {
-          GgufTargetLoader loader(backend, images, findTargetGguf(directory), layout);
+          GgufTargetLoader loader(backend, images, findTargetGguf(directory), layout, hybridConfig);
           return readTarget(backend, layout, std::ref(loader), hybridConfig);
         }
         }
