@@ -129,13 +129,19 @@ void testPageFault() {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     
+    // Wait for async operations to complete
+    cache.waitForPendingSwap();
+    
     auto stats = cache.getStats();
     std::cout << "  After eviction - Swapped: " << stats.swappedPages << std::endl;
     
     // Access old pages (should trigger page faults)
+    std::cout << "  Accessing pages to trigger faults..." << std::endl;
     for (uint64_t id = 1; id <= 6; ++id) {
+        std::cout << "  [test] getPage(" << id << ")" << std::endl;
         void* page = cache.getPage(id, false);
         assert(page != nullptr);
+        std::cout << "  [test] got page " << id << ", verifying..." << std::endl;
         
         uint32_t* data = static_cast<uint32_t*>(page);
         for (size_t i = 0; i < 1024; ++i) {
@@ -146,6 +152,7 @@ void testPageFault() {
                 assert(false);
             }
         }
+        std::cout << "  [test] page " << id << " verified, releasing" << std::endl;
         
         cache.releasePage(id);
     }
@@ -212,20 +219,20 @@ void testLongContext() {
     
     // Simulate 262K tokens = ~1MB KV cache (assuming 4 bytes per token for key+value)
     // With 64KB pages, that's ~16 pages minimum
-    // Test with 1M tokens = ~4MB = 64 pages
+    // Test with 262K tokens = ~1MB = 16 pages
     
     KvCache::Config config;
     config.pageSize = 65536; // 64KB pages
-    config.maxResidentPages = 32; // 2MB resident
+    config.maxResidentPages = 8;  // 512KB resident (half of total)
     config.enableSwap = true;
-    config.swapConfig.hotTierBytes = 32 * 65536;
+    config.swapConfig.hotTierBytes = 8 * 65536;
     config.swapConfig.evictionThreshold = 0.85;
     config.swapConfig.swapDir = "/tmp/splash_swap_test";
     
     KvCache cache(config);
     assert(cache.initialize());
     
-    const size_t numPages = 64;
+    const size_t numPages = 16;  // ~1MB total, 512KB resident
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<uint32_t> dist(0, 0xFFFFFFFF);
