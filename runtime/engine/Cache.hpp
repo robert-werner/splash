@@ -326,6 +326,10 @@ public:
     states_.setCompletionNotifier(notifier);
     completionNotifier_ = std::move(notifier);
   }
+
+  // Accessor for KV cache (for AsyncKvSwap integration)
+  [[nodiscard]] KvCache& kv() noexcept { return kv_; }
+  [[nodiscard]] const KvCache& kv() const noexcept { return kv_; }
   // Consumes finished transfers: a written state or KV page frees its RAM, a
   // restored block becomes usable, and restores the tier had no room for
   // start.

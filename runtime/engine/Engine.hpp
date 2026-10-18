@@ -289,6 +289,7 @@ class Engine final {
 public:
   Engine(EngineConfig config, Cache &cache, model::Model &model,
          EngineEventSink &events);
+  ~Engine() noexcept;
 
   // The request passed protocol::validateRequest; submit checks only what
   // the engine knows: vocabulary, context window, and vision with the
@@ -757,6 +758,7 @@ private:
   EngineEventSink &events_;
   Scheduler scheduler_;
   std::optional<DynamicBatching> dynamicBatching_;
+  std::optional<AsyncKvSwap> asyncKvSwap_;
   MemoryTelemetry telemetry_;
   std::unordered_map<uint64_t, Request> requests_;
   // Pressure preempted work, a lane is still resident, and memory is still

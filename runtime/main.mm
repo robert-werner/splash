@@ -223,9 +223,24 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.ssdKvEnabled = arguments.ssdKvEnabled;
   config.resources.ssdKvPath = arguments.ssdKvPath;
   config.resources.hotTierTokens = arguments.hotTierTokens;
+  config.resources.kvSwapEnable = arguments.kvSwapEnable;
+  config.resources.kvSwapSsdPath = arguments.kvSwapSsdPath;
+  config.resources.kvSwapThreshold = arguments.kvSwapThreshold;
   config.resources.aneLayerIndices = arguments.aneLayerIndices;
   config.nativeLoop.engine.maxContext = arguments.maxContext;
   config.nativeLoop.engine.decodeShare = arguments.decodeShare;
+  config.nativeLoop.engine.maxBatchSize = arguments.maxBatchSize;
+  config.nativeLoop.engine.dynamicBatching = arguments.dynamicBatching;
+  config.nativeLoop.engine.targetGpuUtilization = arguments.targetGpuUtilization;
+  config.nativeLoop.engine.priorityScheduling = arguments.priorityScheduling;
+  config.nativeLoop.engine.preemptThreshold = arguments.preemptThreshold;
+  config.nativeLoop.engine.continuousPrefillThreshold = arguments.continuousAttentionThreshold;
+  config.nativeLoop.engine.kvCompression = arguments.kvCompression;
+  config.nativeLoop.engine.adaptiveBatching = arguments.adaptiveBatching;
+  config.nativeLoop.engine.prefillChunkSize = arguments.prefillChunkSize;
+  config.nativeLoop.engine.enableAsyncKvSwap = arguments.kvSwapEnable;
+  config.nativeLoop.engine.kvSwapPath = arguments.kvSwapSsdPath.string();
+  config.nativeLoop.engine.kvSwapThreshold = arguments.kvSwapThreshold;
   return config;
 }
 

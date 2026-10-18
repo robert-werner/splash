@@ -67,7 +67,15 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
                            config_.maxBatchSize,
                            config_.adaptiveBatching ? config_.targetGpuUtilization : 0.98,
                            config_.targetP99LatencyMs)
-                       : std::nullopt) {
+                       : std::nullopt),
+      asyncKvSwap_(config_.enableAsyncKvSwap
+                   ? std::make_optional<AsyncKvSwap>(AsyncKvSwap::Config{
+                       .swapDir = config_.kvSwapPath,
+                       .ramCapacityBytes = 0,  // Will be updated after memory plan initialization
+                       .swapThreshold = config_.kvSwapThreshold,
+                       .backgroundThreads = 1,
+                       .enabled = true})
+                   : std::nullopt) {
   if (!config_.maxContext || !config_.vocabularySize) {
     throw std::invalid_argument("context and vocabulary sizes must be positive");
   }
@@ -83,6 +91,21 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
     throw std::invalid_argument("prefill chunk size must be between 512 and 32768");
   if (config_.targetP99LatencyMs <= 0.0 || !std::isfinite(config_.targetP99LatencyMs))
     throw std::invalid_argument("target P99 latency must be positive and finite");
+  if (config_.enableAsyncKvSwap) {
+    if (config_.kvSwapPath.empty())
+      throw std::invalid_argument("async KV swap requires a non-empty swap directory path");
+    if (config_.kvSwapThreshold <= 0.0 || config_.kvSwapThreshold >= 1.0)
+      throw std::invalid_argument("KV swap threshold must be in (0.0, 1.0)");
+    asyncKvSwap_->start();
+    // Connect AsyncKvSwap to cache for LRU tracking
+    cache_.kv().setAsyncSwap(&asyncKvSwap_.value());
+  }
+}
+
+Engine::~Engine() noexcept {
+  if (asyncKvSwap_) {
+    asyncKvSwap_->stop();
+  }
 }
 
 void Engine::submit(EngineRequest value) {

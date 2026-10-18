@@ -146,6 +146,10 @@ public:
   // Gives a disk-only block a page whose content follows, by restore or from
   // the request that recomputed it. The parent must be resident.
   void adoptPage(uint64_t blockId, uint32_t page);
+  
+  // AsyncKvSwap integration: connect swap system for page eviction
+  void setAsyncSwap(class AsyncKvSwap* swap) noexcept { asyncSwap_ = swap; }
+  
   // The pool moved pages: the block on each of them, if any, names the page
   // it moved to. It visits only the moved pages.
   void followPages(const KvPageMoves &moves) noexcept;
@@ -244,6 +248,8 @@ private:
   RecencyOrder diskLeaves_;
   RecencyOrder unneeded_;
   uint32_t diskBlocks_ = 0;
+  // Optional AsyncKvSwap integration (non-owning pointer)
+  class AsyncKvSwap* asyncSwap_ = nullptr;
 };
 
 } // namespace splash::engine

@@ -1,5 +1,7 @@
 #include "engine/KvCache.hpp"
 
+#include "engine/AsyncKvSwap.hpp"
+
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -264,6 +266,11 @@ void KvCache::touch(uint64_t blockId) noexcept {
     std::terminate();
   found->second.lastUsed = recency_.next();
   reindex(found->second);
+  
+  // Notify AsyncKvSwap of page access for LRU tracking
+  if (asyncSwap_ && found->second.page != noPage) {
+    asyncSwap_->touchPage(found->second.page, pageTokens * sizeof(uint16_t) * 2);
+  }
 }
 
 KvCache::Chain KvCache::chain(uint64_t blockId) const {

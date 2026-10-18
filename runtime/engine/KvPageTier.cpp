@@ -1,5 +1,7 @@
 #include "engine/KvPageTier.hpp"
 
+#include "engine/AsyncKvSwap.hpp"
+
 #include <algorithm>
 #include <cstddef>
 #include <span>
