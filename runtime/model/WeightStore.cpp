@@ -139,6 +139,12 @@ ops::QuantizedSegment readQuantizedSegment(WeightFile &file, std::string_view la
     metal::MetalBuffer plane1 =
         d.plane1Bytes ? file.section(d.plane1Bytes, std::string(label) + "-plane1") : metal::MetalBuffer{};
     metal::MetalBuffer meta = file.section(d.metaTotalBytes, std::string(label) + "-meta");
+    
+    // TODO(hybrid-quantization): Per-layer format selection stub.
+    // Runtime conversion Q4_K ↔ PQ2_0 requires format-specific dequant/requant
+    // logic not yet implemented. Hybrid quantization CLI flow is functional but
+    // loads model's declared format only. See PHASE2_COMPLETION_REPORT.md.
+    
     return ops::QuantizedSegment::planes(format, d.outputSize, d.inputSize, std::move(plane0),
                                          std::move(plane1), std::move(meta));
 }

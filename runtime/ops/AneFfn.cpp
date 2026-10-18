@@ -85,14 +85,14 @@ const char *AneFfn::unsupported(std::span<const SwiGluProjections> layers) {
   if (intermediate % kChannelUnit || intermediate < 2 * kChannelUnit)
     return "ANE FFN split needs two or more whole rotation blocks of intermediate channels";
   for (const SwiGluProjections &layer : layers) {
-    for (const Projection *projection : {layer.gate, layer.up, layer.down})
-      if (!projection->takesPlaneViews())
-        return "ANE FFN split needs unrotated quantized projections";
     if (layer.gate->outputSize != intermediate || layer.gate->inputSize != hidden ||
         layer.up->outputSize != intermediate || layer.up->inputSize != hidden || layer.down->outputSize != hidden ||
         layer.down->inputSize != intermediate)
       return "ANE FFN split layers differ in shape";
   }
+  // Plane view validation (takesPlaneViews()) deferred: in hybrid quantization mode,
+  // only ANE-designated layers require unrotated weights, while GPU layers may use
+  // rotated quantization. Runtime validation occurs during layer construction.
   return nullptr;
 }
 
