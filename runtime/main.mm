@@ -241,6 +241,8 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.nativeLoop.engine.enableAsyncKvSwap = arguments.kvSwapEnable;
   config.nativeLoop.engine.kvSwapPath = arguments.kvSwapSsdPath.string();
   config.nativeLoop.engine.kvSwapThreshold = arguments.kvSwapThreshold;
+  config.nativeLoop.engine.enableWeightPrefetch = arguments.enableWeightPrefetch;
+  config.nativeLoop.engine.prefetchLayers = arguments.prefetchLayers;
   return config;
 }
 

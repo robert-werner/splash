@@ -16,6 +16,10 @@
 #include <string>
 #include <vector>
 
+namespace splash::model {
+struct HybridQuantConfig;
+}
+
 namespace splash::ops {
 
 namespace ane_ffn {

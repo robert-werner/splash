@@ -280,6 +280,12 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (!parseFinite(value, threshold) || threshold <= 0.0 || threshold >= 1.0)
         throw UsageError("--kv-swap-threshold requires a number in (0.0, 1.0)");
       result.kvSwapThreshold = threshold;
+    } else if (option == "--kv-swap-hot-tier") {
+      if (!parsePositive(value, result.kvSwapHotTier))
+        throw UsageError("--kv-swap-hot-tier requires a positive integer");
+    } else if (option == "--kv-swap-batch-size") {
+      if (!parsePositive(value, result.kvSwapBatchSize) || result.kvSwapBatchSize < 1 || result.kvSwapBatchSize > 256)
+        throw UsageError("--kv-swap-batch-size requires an integer in [1, 256]");
     } else if (option == "--ane-layers") {
       if (value.empty())
         throw UsageError("--ane-layers requires comma-separated layer indices");
@@ -312,6 +318,13 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       result.aneLayerIndices.erase(
         std::unique(result.aneLayerIndices.begin(), result.aneLayerIndices.end()),
         result.aneLayerIndices.end());
+    } else if (option == "--enable-weight-prefetch") {
+      if (value != "on" && value != "off")
+        throw UsageError("--enable-weight-prefetch requires on or off");
+      result.enableWeightPrefetch = value == "on";
+    } else if (option == "--prefetch-layers") {
+      if (!parsePositive(value, result.prefetchLayers))
+        throw UsageError("--prefetch-layers requires a positive integer");
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
     } else {

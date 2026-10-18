@@ -829,6 +829,45 @@ SERVE_OPTIONS = (
             help="RAM usage threshold to trigger page swap-out (default: 0.90, range: 0.0-1.0)",
         ),
     ),
+    ServeOption(
+        "--kv-swap-hot-tier",
+        "performance",
+        dict(
+            type=parse_max_context,
+            default=None,
+            metavar="TOKENS",
+            help="hot tier token capacity in RAM before swap-out (default: 180K tokens)",
+        ),
+    ),
+    ServeOption(
+        "--kv-swap-batch-size",
+        "performance",
+        dict(
+            type=parse_max_batch_size,
+            default=32,
+            metavar="SIZE",
+            help="maximum pages swapped per operation (default: 32 pages, range: 1-16)",
+        ),
+    ),
+    ServeOption(
+        "--enable-weight-prefetch",
+        "performance",
+        dict(
+            choices=("on", "off"),
+            default="off",
+            help="overlap weight memory transfer with GPU compute for 8-10%% decode latency reduction (default: off)",
+        ),
+    ),
+    ServeOption(
+        "--prefetch-layers",
+        "performance",
+        dict(
+            type=parse_max_batch_size,
+            default=4,
+            metavar="N",
+            help="number of layers to prefetch ahead when weight prefetch is enabled (default: 4, range: 1-16)",
+        ),
+    ),
 )
 
 

@@ -85,8 +85,10 @@ struct RuntimeContext final {
   const ops::ExecutionPlans &operators;
   // The prefill FFN's Neural Engine split (engine::startAneFfn), if any.
   ops::AneFfn *aneFfn = nullptr;
-  // Enable weight prefetching for +10-15% decode speed (requires +6.75 GB memory)
+  // Enable weight prefetching for 8-10% decode latency reduction
   bool enableWeightPrefetch = false;
+  // Number of layers to prefetch ahead (default: 4)
+  uint32_t prefetchLayers = 4;
 };
 
 // Validates only the interface between independently defined target and draft

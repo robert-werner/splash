@@ -1731,6 +1731,15 @@ def _native_command(args, relaunch_context=None):
         command.extend(("--kv-swap-ssd-path", str(args.kv_swap_ssd_path)))
     if args.kv_swap_threshold != 0.90:
         command.extend(("--kv-swap-threshold", str(args.kv_swap_threshold)))
+    if args.kv_swap_hot_tier is not None:
+        command.extend(("--kv-swap-hot-tier", str(args.kv_swap_hot_tier)))
+    if args.kv_swap_batch_size != 32:
+        command.extend(("--kv-swap-batch-size", str(args.kv_swap_batch_size)))
+    # Phase 4: Weight Prefetch
+    if args.enable_weight_prefetch == "on":
+        command.extend(("--enable-weight-prefetch", "on"))
+    if args.prefetch_layers != 4:
+        command.extend(("--prefetch-layers", str(args.prefetch_layers)))
     if relaunch_context is not None and args.max_context is None:
         command.extend(("--relaunch-context", str(relaunch_context)))
     return command

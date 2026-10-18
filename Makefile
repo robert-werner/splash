@@ -269,6 +269,7 @@ ENGINE_CPP_SOURCES := \
 	runtime/engine/KvPageTier.cpp \
 	runtime/engine/AsyncKvSwap.cpp \
 	runtime/engine/ExtendedKvTier.cpp \
+	runtime/engine/WeightPrefetch.cpp \
 	runtime/engine/CacheDirectory.cpp \
 	runtime/engine/DiskSpace.cpp \
 	runtime/engine/StateCache.cpp \
