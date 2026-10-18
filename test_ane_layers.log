@@ -1,0 +1,10 @@
+Splash model prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 is already installed in /Users/a1111/development/splash_of_mine/install/models/prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+08:42:16 Loading · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+08:42:16 Chat template · patched to render later system messages in place (the original template rejects them), generation prompt 5-7 tokens
+error: --ane-layers: invalid layer index
+usage: /Users/a1111/development/splash_of_mine/build/splash serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto [MAX_CACHE_DISK_BYTES] [--kv-format int8|bf16] [--state-format fp32|bf16] [--decode-share SHARE] [--max-image-patches PATCHES] [--persistent-cache on|off] [--cache-dir DIRECTORY] [--max-cache-disk-writes BYTES] [--idle-release SECONDS|off] [--idle-sleep prevent|allow] [--ane on|off] [--relaunch-context TOKENS]
+       /Users/a1111/development/splash_of_mine/build/splash model-check mlx-affine none|safetensors CONFIG [DRAFT_CONFIG]
+       /Users/a1111/development/splash_of_mine/build/splash model-check gguf none|gguf CONFIG GGUF_METADATA [DRAFT_CONFIG]
+       /Users/a1111/development/splash_of_mine/build/splash device-check
+08:42:16 Error · native protocol reached EOF
+08:42:16 Stopping · releasing engine resources

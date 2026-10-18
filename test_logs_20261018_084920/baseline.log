@@ -1,0 +1,22 @@
+Splash model prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 is already installed in /Users/a1111/development/splash_of_mine/install/models/prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+08:49:26 Loading · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0
+08:49:26 Chat template · patched to render later system messages in place (the original template rejects them), generation prompt 5-7 tokens
+08:49:29 Weights loaded in 3.37 s.
+08:49:29 Kernel policy for GPU family 10 with 16 cores.
+08:49:29 The GPU runs the prefill FFN alone: ANE FFN split needs unrotated quantized projections.
+08:49:30 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 528 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+08:49:30 Pipeline warming: compiled 6 critical pipelines in 0.002 s
+08:49:36 Memory: growth paused; waiting=0; suspended=0
+08:49:37 Ready · prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0 · context 256K · language only · http://127.0.0.1:8095
+08:49:39 Started · input 61 · cached 0 · effort absent · thinking on
+08:49:41 Done · input 61 · cached 0 · output 79 · TTFT 0.2s · 39.0 tok/s · 3.0 tok/cycle
+08:49:42 Started · input 62 · cached 32 · effort absent · thinking on
+08:49:44 Memory: growth available; resource wait cleared
+08:49:47 Done · input 62 · cached 32 · output 150 · TTFT 0.1s · 36.8 tok/s · 2.8 tok/cycle
+08:49:47 Engine failed · native protocol reached EOF
+08:49:50 Weights loaded in 3.29 s.
+08:49:50 Kernel policy for GPU family 10 with 16 cores.
+08:49:50 The GPU runs the prefill FFN alone: ANE FFN split needs unrotated quantized projections.
+08:49:50 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 528 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+08:49:50 Pipeline warming: compiled 6 critical pipelines in 0.002 s
+08:49:56 Engine restarted

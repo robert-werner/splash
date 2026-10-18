@@ -18,6 +18,13 @@ bool parsePositive(std::string_view value, T &result) {
   return parsed.ec == std::errc{} && parsed.ptr == end && result != 0;
 }
 
+template <typename T>
+bool parseNonNegative(std::string_view value, T &result) {
+  const char *end = value.data() + value.size();
+  auto parsed = std::from_chars(value.data(), end, result);
+  return parsed.ec == std::errc{} && parsed.ptr == end;
+}
+
 uint64_t parseMaxMemory(std::string_view value) {
   if (value == "auto")
     return 0;
@@ -282,7 +289,7 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
         if (c == ',') {
           if (!indexStr.empty()) {
             uint32_t idx = 0;
-            if (!parsePositive(std::string_view(indexStr), idx))
+            if (!parseNonNegative(std::string_view(indexStr), idx))
               throw UsageError("--ane-layers: invalid layer index");
             result.aneLayerIndices.push_back(idx);
             indexStr.clear();
@@ -295,7 +302,7 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       }
       if (!indexStr.empty()) {
         uint32_t idx = 0;
-        if (!parsePositive(std::string_view(indexStr), idx))
+        if (!parseNonNegative(std::string_view(indexStr), idx))
           throw UsageError("--ane-layers: invalid layer index");
         result.aneLayerIndices.push_back(idx);
       }
