@@ -1,12 +1,10 @@
 #include "model/Runtime.hpp"
 #include "AwakeClock.hpp"
 #include "engine/AneTelemetry.hpp"
-#include "engine/WeightPrefetch.hpp"
 #include "model/QwenState.hpp"
 #include "model/QwenTarget.hpp"
 #include "model/RuntimeArenas.hpp"
 
-#include "engine/WeightPrefetch.hpp"
 #include "metal/CommandGraph.hpp"
 #include "metal/abi/GDN.h"
 #include "ops/AneFfn.hpp"
@@ -376,8 +374,6 @@ struct Runtime::Impl {
   ops::AneFfn *aneFfn;
   engine::AneTelemetry *aneTelemetry;
   
-  // Weight prefetching for 8-10% decode latency reduction
-  std::unique_ptr<engine::WeightPrefetch> weightPrefetch;
   explicit Impl(RuntimeContext value)
       : backend(value.backend),
         model(value.model),
@@ -406,7 +402,6 @@ struct Runtime::Impl {
     penaltyTable =
         decodeArena->batchSlice(DecodeTensor::PenaltyState, kLaneCount);
     preparePolicyPipelines();
-    initializeWeightPrefetch(value.enableWeightPrefetch, value.prefetchLayers);
   }
 
   // Warmup selects greedily, so the first sampled, penalized or constrained
@@ -439,13 +434,6 @@ struct Runtime::Impl {
                        geometry.target.stopTokens[0],
                        geometry.target.stopTokens[1], penalties);
     backend.preparePipelines(graph.dispatches());
-  }
-
-  // Initialize weight prefetching for 8-10% decode latency reduction
-  void initializeWeightPrefetch(bool enable, uint32_t prefetchDepth) {
-    if (enable && prefetchDepth > 0) {
-      weightPrefetch = std::make_unique<engine::WeightPrefetch>(prefetchDepth);
-    }
   }
 
   Request &request(uint64_t id) {
@@ -1753,23 +1741,6 @@ struct Runtime::Impl {
     }
     targetModel.addVerify(graph, std::move(buffers), kvPages.layers(),
                           std::span(chunks).first(lanes), lanes);
-    
-    // Phase 4: Weight prefetch integration with actual MetalBuffer pointers
-    // Trigger prefetch for upcoming layers during decode to overlap memory
-    // transfer with GPU compute.
-    if (weightPrefetch) {
-      // Prefetch next layer weights (if within bounds)
-      // In a real layer-by-layer decode, this would be called per layer
-      // For now, demonstrate the API usage with actual buffer pointers
-      for (uint32_t layer = 0; layer < std::min(4u, geometry.target.layers); ++layer) {
-        const auto layerWeights = targetModel.getLayerWeights(layer);
-        if (!layerWeights.pointers.empty() && layerWeights.totalBytes > 0) {
-          // Use the first weight buffer pointer for prefetch
-          weightPrefetch->prefetchLayer(layer, layerWeights.pointers[0], 
-                                        layerWeights.sizes[0]);
-        }
-      }
-    }
   }
 
   void encodeTargetVerifyBatchPolicy(CommandGraph &graph,
@@ -2688,14 +2659,6 @@ Runtime::decodeAsync(const BatchPlan &plan,
 
   const std::span<Impl::Request *const> entries(requests.data(), width);
   const uint32_t ropeRows = width * kDecodeRows;
-  
-  // Phase 4: Weight prefetch integration for 8-10% decode latency reduction.
-  // Heuristic prefetch hint for upcoming layers. Full weight-level prefetch
-  // requires operator API changes to expose weight buffer pointers; this
-  // marks the decode path for future Metal resource state optimization.
-  if (impl_->weightPrefetch) {
-    impl_->weightPrefetch->reset();
-  }
   
   CommandGraph commandGraph;
   impl_->addRopeTables(

@@ -246,7 +246,6 @@ $(TEST_WEIGHT_SOURCE): dev/tests/engine/weight_source_test.cpp runtime/model/Wei
 $(TEST_GGUF_FILE): dev/tests/engine/gguf_file_test.cpp runtime/model/GgufFile.cpp \
 		runtime/model/WeightSource.cpp
 $(TEST_MEMORY_TEST):	runtime/metal/DeviceCapabilities.cpp \
-	runtime/metal/PipelineWarming.cpp \
 	runtime/engine/MemoryPlan.cpp \
 		dev/tests/engine/engine_memory_plan_test.cpp
 $(TEST_KV_PAGE_CACHE_TEST): runtime/engine/KvPool.cpp \

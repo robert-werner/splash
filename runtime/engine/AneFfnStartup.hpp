@@ -28,8 +28,9 @@ struct AneFfnSetting final {
   bool lazyAllocation = false;
   // --recalibrate-ane: forget saved calibration and recalibrate on this start.
   bool recalibrate = false;
-  // Use persistent cache (~/.cache/splash/ane_calibration.cache) instead of in-memory.
-  // Eliminates 2-3s startup penalty on engine restart.
+  // --persistent-ane-calibration: keep this Mac's calibration of the model in
+  // the model's own store (ane::recall/remember), so that a later start takes
+  // it instead of calibrating again; off calibrates on every start.
   bool persistentCache = true;
 
   // The setting of a dev tool's --ane-ffn-share and --ane-ffn-minimum-rows:
@@ -75,8 +76,6 @@ struct AneFfnModel final {
   std::function<void(uint32_t maxAneUnits)> forget;
   // Whether the Metal backend still serves.
   std::function<bool()> healthy;
-  // Model identifier for persistent cache keying (e.g., "llama-3-8b").
-  std::string identifier;
 };
 
 // The context a start asks the split to leave: --max-context's, or with

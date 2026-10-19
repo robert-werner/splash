@@ -253,7 +253,6 @@ ENGINE_CPP_SOURCES := \
 	runtime/metal/PipelineWarming.cpp \
 	runtime/engine/MemoryPlan.cpp \
 	runtime/engine/AneFfnStartup.cpp \
-	runtime/engine/AneFfnPersistentCache.cpp \
 	runtime/engine/SpeculationTuning.cpp \
 	runtime/engine/Scheduler.cpp \
 	runtime/engine/DynamicBatching.cpp \
@@ -268,9 +267,7 @@ ENGINE_CPP_SOURCES := \
 	runtime/engine/KvPool.cpp \
 	runtime/engine/KvCache.cpp \
 	runtime/engine/KvPageTier.cpp \
-	runtime/engine/AsyncKvSwap.cpp \
 	runtime/engine/ExtendedKvTier.cpp \
-	runtime/engine/WeightPrefetch.cpp \
 	runtime/engine/CacheDirectory.cpp \
 	runtime/engine/DiskSpace.cpp \
 	runtime/engine/StateCache.cpp \

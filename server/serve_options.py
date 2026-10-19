@@ -234,16 +234,6 @@ def parse_max_batch_size(value):
     return size
 
 
-def parse_swap_batch_size(value):
-    try:
-        size = int(value)
-    except ValueError:
-        size = 0
-    if size <= 0 or size > 256:
-        raise argparse.ArgumentTypeError("must be a positive integer between 1 and 256")
-    return size
-
-
 def parse_max_image_pixels(value):
     try:
         pixels = int(value)
@@ -795,9 +785,9 @@ SERVE_OPTIONS = (
         "--persistent-ane-calibration",
         "performance",
         dict(
-            action="store_true",
-            default=True,
-            help="persist ANE calibration across runs (saves 2-3s startup, default: on)",
+            choices=("on", "off"),
+            default="on",
+            help="keep this Mac's Neural Engine FFN calibration across runs (default: on)",
         ),
     ),
     ServeOption(
@@ -808,74 +798,6 @@ SERVE_OPTIONS = (
             default=0.25,
             metavar="THRESHOLD",
             help="draft acceptance threshold for adaptive speculation depth (default: 0.25; range: 0.1-0.5)",
-        ),
-    ),
-    ServeOption(
-        "--kv-swap-enable",
-        "performance",
-        dict(
-            choices=("on", "off"),
-            default="off",
-            help="enable async KV page swapping to SSD with compression (extends context from 262K to 1M+, default: off)",
-        ),
-    ),
-    ServeOption(
-        "--kv-swap-ssd-path",
-        "performance",
-        dict(
-            type=parse_cache_dir,
-            default=None,
-            metavar="PATH",
-            help="directory for swap files (default: ~/.splash/kv_cache)",
-        ),
-    ),
-    ServeOption(
-        "--kv-swap-threshold",
-        "performance",
-        dict(
-            type=parse_decode_share,
-            default=0.90,
-            metavar="THRESHOLD",
-            help="RAM usage threshold to trigger page swap-out (default: 0.90, range: 0.0-1.0)",
-        ),
-    ),
-    ServeOption(
-        "--kv-swap-hot-tier",
-        "performance",
-        dict(
-            type=parse_max_context,
-            default=None,
-            metavar="TOKENS",
-            help="hot tier token capacity in RAM before swap-out (default: 180K tokens)",
-        ),
-    ),
-    ServeOption(
-        "--kv-swap-batch-size",
-        "performance",
-        dict(
-            type=parse_swap_batch_size,
-            default=32,
-            metavar="SIZE",
-            help="maximum pages swapped per operation (default: 32 pages, range: 1-256)",
-        ),
-    ),
-    ServeOption(
-        "--enable-weight-prefetch",
-        "performance",
-        dict(
-            choices=("on", "off"),
-            default="off",
-            help="overlap weight memory transfer with GPU compute for 8-10%% decode latency reduction (default: off)",
-        ),
-    ),
-    ServeOption(
-        "--prefetch-layers",
-        "performance",
-        dict(
-            type=parse_max_batch_size,
-            default=4,
-            metavar="N",
-            help="number of layers to prefetch ahead when weight prefetch is enabled (default: 4, range: 1-16)",
         ),
     ),
 )
