@@ -1,0 +1,6 @@
+13:22:49 Weights loaded in 2.95 s.
+13:22:49 SSD cache off: the memory plan cannot hold a 184144-token context beside its state staging; no state staging is set aside.
+13:22:49 Kernel policy for GPU family 10 with 16 cores.
+13:22:49 The GPU runs the prefill FFN alone, as given.
+13:22:49 Pipeline warming: compiled 6 critical pipelines in 0.002 s
+error: native transport stopped after a protocol failure

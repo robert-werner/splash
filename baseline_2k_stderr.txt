@@ -1,0 +1,6 @@
+13:22:38 Weights loaded in 3.07 s.
+13:22:38 Kernel policy for GPU family 10 with 16 cores.
+13:22:38 The GPU runs the prefill FFN alone, as given.
+13:22:38 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 1040 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+13:22:38 Pipeline warming: compiled 6 critical pipelines in 0.000 s
+error: native transport stopped after a protocol failure

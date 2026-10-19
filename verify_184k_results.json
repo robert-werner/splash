@@ -1,0 +1,14 @@
+{
+  "baseline": {
+    "duration": 10.172040939331055,
+    "exit_code": 76,
+    "stderr": "13:22:38 Weights loaded in 3.07 s.\n13:22:38 Kernel policy for GPU family 10 with 16 cores.\n13:22:38 The GPU runs the prefill FFN alone, as given.\n13:22:38 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 1040 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.\n13:22:38 Pipeline warming: compiled 6 critical pipelines in 0.000 s\nerror: native transport stopped after a protocol failure\n",
+    "stdout_size": 91
+  },
+  "full": {
+    "duration": 10.032922744750977,
+    "exit_code": 76,
+    "stderr": "13:22:49 Weights loaded in 2.95 s.\n13:22:49 SSD cache off: the memory plan cannot hold a 184144-token context beside its state staging; no state staging is set aside.\n13:22:49 Kernel policy for GPU family 10 with 16 cores.\n13:22:49 The GPU runs the prefill FFN alone, as given.\n13:22:49 Pipeline warming: compiled 6 critical pipelines in 0.002 s\nerror: native transport stopped after a protocol failure\n",
+    "stdout_size": 91
+  }
+}
