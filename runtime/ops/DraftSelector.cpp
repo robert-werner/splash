@@ -13,7 +13,7 @@ namespace {
 // Test values: 0.6, 0.7, 0.8, 0.9, 1.0
 // Baseline (no override): use target temperature from policies[lane]
 // Expected optimum: 0.7-0.8 for 2-4 point acceptance gain
-constexpr float kDraftTemperatureOverride = 0.8f;
+constexpr float kDraftTemperatureOverride = 0.9f;
 
 constexpr uint32_t kShards = SPLASH_DRAFT_SAMPLING_SHARDS;
 constexpr uint32_t kPositions = SPLASH_DRAFT_PROPOSAL_TOKENS;
