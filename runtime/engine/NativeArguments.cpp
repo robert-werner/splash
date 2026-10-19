@@ -1,5 +1,7 @@
 #include "engine/NativeArguments.hpp"
 
+#include "model/Model.hpp"
+
 #include <charconv>
 #include <cmath>
 #include <limits>
@@ -94,8 +96,13 @@ double parseTargetGpuUtilization(std::string_view value) {
 
 uint32_t parseMaxBatchSize(std::string_view value) {
   uint32_t result = 0;
-  if (!parsePositive(value, result) || result < 1 || result > 16)
-    throw UsageError("--max-batch-size requires an integer in [1, 16]");
+  // The lanes are fixed at build time: Model.hpp's ExecutionLimits::
+  // maximumBatchWidth sizes the decode arenas, the lane state buffers and the
+  // draft's persistent keys. A larger batch has nowhere to live, so accepting
+  // one would only be clamped later and the flag would lie.
+  constexpr uint32_t maximum = model::ExecutionLimits::maximumBatchWidth;
+  if (!parsePositive(value, result) || result < 1 || result > maximum)
+    throw UsageError("--max-batch-size requires an integer in [1, " + std::to_string(maximum) + "]");
   return result;
 }
 

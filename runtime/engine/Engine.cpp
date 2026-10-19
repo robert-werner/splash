@@ -75,7 +75,7 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
     throw std::invalid_argument("the engine needs the governor's growth pause and serving mark");
   if (!std::isfinite(config_.decodeShare) || config_.decodeShare < 0.0)
     throw std::invalid_argument("decode share must be nonnegative and finite");
-  if (config_.maxBatchSize < 1 || config_.maxBatchSize > 16)
+  if (config_.maxBatchSize < 1 || config_.maxBatchSize > model::ExecutionLimits::maximumBatchWidth)
     throw std::invalid_argument("max batch size must be between 1 and 16");
   if (config_.continuousPrefillThreshold > config_.maxContext)
     throw std::invalid_argument("continuous prefill threshold cannot exceed max context");
