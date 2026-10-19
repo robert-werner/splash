@@ -942,8 +942,6 @@ model::RuntimeContext RuntimeResources::modelContext() noexcept {
       *stateStorage_,
       operators_,
       aneFfn_.get(),
-      false,  // enableWeightPrefetch placeholder
-      4,      // prefetchLayers placeholder
       aneTelemetry_.get(),
   };
 }

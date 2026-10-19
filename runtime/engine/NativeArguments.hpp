@@ -110,30 +110,12 @@ struct NativeArguments final {
   // --speculation-threshold N: draft acceptance threshold for adaptive depth (0.15-0.30, default 0.25).
   float speculationThreshold = 0.25f;
   
-  // Phase 3: Async KV page swap
-  // --kv-swap-enable: enable async background KV page swap to SSD with compression (default: off).
-  bool kvSwapEnable = false;
-  // --kv-swap-ssd-path PATH: swap directory path (default: ~/.cache/splash/kv_swap).
-  std::filesystem::path kvSwapSsdPath;
-  // --kv-swap-threshold N: RAM usage threshold to trigger swap (0.0-1.0, default 0.90).
-  double kvSwapThreshold = 0.90;
-  // --kv-swap-hot-tier N: hot tier token capacity in RAM before swap-out (default: 180K).
-  uint32_t kvSwapHotTier = 180 * 1024;
-  // --kv-swap-batch-size N: maximum pages swapped per operation (default: 32).
-  uint32_t kvSwapBatchSize = 32;
-  
   // Phase 2: ANE Hybrid Quantization
   // --ane-layers "0,2,4,8,10,14": comma-separated FFN layer indices for ANE (Q4_K unrotated).
   // Remaining layers use GPU (PQ2_0 rotated). Empty = disabled (pure quantization).
   std::vector<uint32_t> aneLayerIndices;
   // --ane-telemetry on|off: enable ANE utilization monitoring (default: off).
   bool aneTelemetryEnabled = false;
-  
-  // Phase 4: Weight Prefetch
-  // --enable-weight-prefetch: overlap weight memory transfer with GPU compute (default: off).
-  bool enableWeightPrefetch = false;
-  // --prefetch-layers N: number of layers to prefetch ahead (default: 4).
-  uint32_t prefetchLayers = 4;
 };
 
 // Reads `serve-native MODEL_DIRECTORY MAX_CONTEXT|auto MAX_MEMORY_BYTES|auto

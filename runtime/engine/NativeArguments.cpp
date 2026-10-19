@@ -267,25 +267,6 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (!parseFinite(value, threshold) || threshold < 0.1 || threshold > 0.5)
         throw UsageError("--speculation-threshold requires a number in [0.1, 0.5]");
       result.speculationThreshold = static_cast<float>(threshold);
-    } else if (option == "--kv-swap-enable") {
-      if (value != "on" && value != "off")
-        throw UsageError("--kv-swap-enable requires on or off");
-      result.kvSwapEnable = value == "on";
-    } else if (option == "--kv-swap-ssd-path") {
-      if (value.empty())
-        throw UsageError("--kv-swap-ssd-path requires a directory path");
-      result.kvSwapSsdPath = std::filesystem::absolute(std::filesystem::path(value));
-    } else if (option == "--kv-swap-threshold") {
-      double threshold = 0.0;
-      if (!parseFinite(value, threshold) || threshold <= 0.0 || threshold >= 1.0)
-        throw UsageError("--kv-swap-threshold requires a number in (0.0, 1.0)");
-      result.kvSwapThreshold = threshold;
-    } else if (option == "--kv-swap-hot-tier") {
-      if (!parsePositive(value, result.kvSwapHotTier))
-        throw UsageError("--kv-swap-hot-tier requires a positive integer");
-    } else if (option == "--kv-swap-batch-size") {
-      if (!parsePositive(value, result.kvSwapBatchSize) || result.kvSwapBatchSize < 1 || result.kvSwapBatchSize > 256)
-        throw UsageError("--kv-swap-batch-size requires an integer in [1, 256]");
     } else if (option == "--ane-layers") {
       if (value.empty())
         throw UsageError("--ane-layers requires comma-separated layer indices");
@@ -322,13 +303,6 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (value != "on" && value != "off")
         throw UsageError("--ane-telemetry requires on or off");
       result.aneTelemetryEnabled = value == "on";
-    } else if (option == "--enable-weight-prefetch") {
-      if (value != "on" && value != "off")
-        throw UsageError("--enable-weight-prefetch requires on or off");
-      result.enableWeightPrefetch = value == "on";
-    } else if (option == "--prefetch-layers") {
-      if (!parsePositive(value, result.prefetchLayers))
-        throw UsageError("--prefetch-layers requires a positive integer");
     } else if (option == "--relaunch-context") {
       relaunchContext = value;
     } else {

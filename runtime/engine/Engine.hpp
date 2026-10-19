@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ops/Vision.hpp"
-#include "engine/AsyncKvSwap.hpp"
 #include "engine/Cache.hpp"
 #include "engine/DynamicBatching.hpp"
 #include "engine/MemoryTelemetry.hpp"
@@ -136,32 +135,6 @@ struct EngineConfig final {
   // Default: 8192 tokens (~200-300ms on M5 Pro 24GB).
   // Range: 512-32768 tokens.
   uint32_t prefillChunkSize = 8192;
-  
-  // Phase 3: Async KV Swap to SSD with compression
-  // Enable asynchronous KV page swapping to SSD (--kv-swap-enable).
-  // When true, cold KV pages are evicted to SSD when RAM usage exceeds
-  // swapThreshold, extending effective context from 262K (RAM) to 1M+ (SSD).
-  bool enableAsyncKvSwap = false;
-  // Directory for swap files (--kv-swap-ssd-path PATH).
-  // Default: ~/.splash/kv_cache
-  std::string kvSwapPath = "~/.splash/kv_cache";
-  // RAM usage threshold for triggering swap-out (--kv-swap-threshold).
-  // Range: (0.0, 1.0), default: 0.90 (swap when RAM > 90% capacity).
-  double kvSwapThreshold = 0.90;
-  // Hot tier token capacity in RAM before swap-out (--kv-swap-hot-tier).
-  // Default: 180K tokens (~5.8GB at bf16, ~2.8GB at int8).
-  uint32_t kvSwapHotTier = 180 * 1024;
-  // Maximum swap batch size (pages swapped per operation).
-  // Default: 32 pages (~128 MiB at 4 MiB/page).
-  uint32_t kvSwapBatchSize = 32;
-  
-  // Phase 4: Weight Prefetch - overlap weight memory transfer with GPU compute
-  // Enable weight prefetching for next layer during current layer execution (--enable-weight-prefetch).
-  // When true, prefetch layer N+1 weights while GPU executes layer N, reducing decode latency by 8-10%.
-  bool enableWeightPrefetch = false;
-  // Number of layers to prefetch ahead (--prefetch-layers N).
-  // Default: 4 layers. Range: 1-16. Higher values increase memory traffic but improve overlap.
-  uint32_t prefetchLayers = 4;
 };
 
 // While an active one lives, allocations are memory a request in service
@@ -300,7 +273,6 @@ class Engine final {
 public:
   Engine(EngineConfig config, Cache &cache, model::Model &model,
          EngineEventSink &events);
-  ~Engine() noexcept;
 
   // The request passed protocol::validateRequest; submit checks only what
   // the engine knows: vocabulary, context window, and vision with the
@@ -769,7 +741,6 @@ private:
   EngineEventSink &events_;
   Scheduler scheduler_;
   std::optional<DynamicBatching> dynamicBatching_;
-  std::optional<AsyncKvSwap> asyncKvSwap_;
   MemoryTelemetry telemetry_;
   std::unordered_map<uint64_t, Request> requests_;
   // Pressure preempted work, a lane is still resident, and memory is still

@@ -385,13 +385,6 @@ std::unique_ptr<RuntimeBootstrap> RuntimeBootstrap::start(
     config.nativeLoop.engine.ssdKvPath = config.resources.ssdKvPath;
     config.nativeLoop.engine.hotTierTokens = config.resources.hotTierTokens;
     
-    // Phase 3: Async KV page swap configuration.
-    config.nativeLoop.engine.enableAsyncKvSwap = config.resources.kvSwapEnable;
-    config.nativeLoop.engine.kvSwapPath = config.resources.kvSwapSsdPath.empty() 
-        ? std::string("~/.cache/splash/kv_swap") 
-        : config.resources.kvSwapSsdPath.string();
-    config.nativeLoop.engine.kvSwapThreshold = config.resources.kvSwapThreshold;
-    
     config.nativeLoop.weights = &resources->releasableMemory();
     config.nativeLoop.weightAdmission = resources->memoryGovernor().allocationAdmission();
     // The parser and engine consume the same resolved ceiling. In automatic

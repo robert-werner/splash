@@ -585,6 +585,14 @@ void testRemembered() {
             "a remembered calibration of " + std::to_string(unusable.aneUnits) + " units from " +
                 std::to_string(unusable.minimumRows) + " rows was taken");
   }
+  // --persistent-ane-calibration off: the start neither takes the model's
+  // calibration nor keeps the one it makes.
+  fake = {};
+  fake.stored = Calibration{9, 700, gpu};
+  started = start(fake, {.persistentCache = false});
+  require(started.start.outcome.kind == Kind::Split && !fake.recalled && !fake.remembered && fake.timings == 1 &&
+              fake.prepared == std::pair(8u, true),
+          "a start that keeps no calibration took one or kept one: " + started.log);
 }
 
 // A given share runs the units nearest it, untimed, over the chunks given, and is not remembered; a given split

@@ -161,14 +161,6 @@ struct RuntimeResourcesConfig {
   std::string ssdKvPath;
   uint32_t hotTierTokens = 200 * 1024; // 200K tokens
   
-  // Phase 3: Async KV page swap to SSD with compression
-  // --kv-swap-enable: enable async background KV page swap (extends context 262K→1M+).
-  bool kvSwapEnable = false;
-  // --kv-swap-ssd-path: swap directory path (default: ~/.cache/splash/kv_swap).
-  std::filesystem::path kvSwapSsdPath;
-  // --kv-swap-threshold: RAM usage threshold to trigger swap (0.0-1.0, default 0.90).
-  double kvSwapThreshold = 0.90;
-  
   // Phase 2: ANE Hybrid Quantization
   // Per-layer quantization configuration: indices of FFN layers to run on ANE (Q4_K unrotated).
   // Remaining FFN layers run on GPU (PQ2_0 rotated). Empty = disabled (pure quantization).

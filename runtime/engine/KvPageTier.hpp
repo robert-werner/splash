@@ -7,13 +7,9 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <unordered_set>
 #include <vector>
 
 namespace splash::engine {
-
-// Forward declaration for AsyncKvSwap integration
-class AsyncKvSwap;
 
 // Moves KV pages between their extents and a slot file. The file's IO worker
 // writes a demoted page straight from its extent and reads a restored page
@@ -55,14 +51,6 @@ public:
           std::function<void()> completion) override;
   void poll() override;
 
-  // AsyncKvSwap integration: track swapped pages
-  void markSwapped(uint32_t page) noexcept { swappedPages_.insert(page); }
-  void clearSwapped(uint32_t page) noexcept { swappedPages_.erase(page); }
-  [[nodiscard]] bool isSwapped(uint32_t page) const noexcept {
-    return swappedPages_.contains(page);
-  }
-  void setAsyncSwap(AsyncKvSwap* swap) noexcept { asyncSwap_ = swap; }
-
 private:
   struct Transfer;
   class Ticket;
@@ -76,10 +64,6 @@ private:
   uint32_t restores_ = 0;
   // Every transfer whose IO the worker may still run.
   std::vector<std::shared_ptr<Transfer>> inFlight_;
-  // Pages currently swapped to SSD via AsyncKvSwap
-  std::unordered_set<uint32_t> swappedPages_;
-  // Optional AsyncKvSwap integration (non-owning pointer)
-  AsyncKvSwap* asyncSwap_ = nullptr;
 };
 
 } // namespace splash::engine

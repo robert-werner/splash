@@ -213,6 +213,7 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   // LazyAneAllocation reaches startAneFfn() through AneFfnSetting: this is the
   // struct RuntimeResources hands it, so setting it anywhere else is inert.
   config.resources.aneFfn.lazyAllocation = arguments.lazyAneAllocation;
+  config.resources.aneFfn.persistentCache = arguments.persistentAneCalibration;
   config.resources.relaunchContext = arguments.relaunchContext;
   // Memory switches, as the parser read them.
   config.resources.lazyAneAllocation = arguments.lazyAneAllocation;
@@ -223,9 +224,6 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.ssdKvEnabled = arguments.ssdKvEnabled;
   config.resources.ssdKvPath = arguments.ssdKvPath;
   config.resources.hotTierTokens = arguments.hotTierTokens;
-  config.resources.kvSwapEnable = arguments.kvSwapEnable;
-  config.resources.kvSwapSsdPath = arguments.kvSwapSsdPath;
-  config.resources.kvSwapThreshold = arguments.kvSwapThreshold;
   config.resources.aneLayerIndices = arguments.aneLayerIndices;
   config.resources.aneTelemetryEnabled = arguments.aneTelemetryEnabled;
   config.nativeLoop.engine.maxContext = arguments.maxContext;
@@ -239,11 +237,6 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.nativeLoop.engine.kvCompression = arguments.kvCompression;
   config.nativeLoop.engine.adaptiveBatching = arguments.adaptiveBatching;
   config.nativeLoop.engine.prefillChunkSize = arguments.prefillChunkSize;
-  config.nativeLoop.engine.enableAsyncKvSwap = arguments.kvSwapEnable;
-  config.nativeLoop.engine.kvSwapPath = arguments.kvSwapSsdPath.string();
-  config.nativeLoop.engine.kvSwapThreshold = arguments.kvSwapThreshold;
-  config.nativeLoop.engine.enableWeightPrefetch = arguments.enableWeightPrefetch;
-  config.nativeLoop.engine.prefetchLayers = arguments.prefetchLayers;
   return config;
 }
 

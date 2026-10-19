@@ -3,9 +3,6 @@
 #include "AwakeClock.hpp"
 #include "StderrLine.hpp"
 #include "ane/Program.hpp"
-#include "engine/AneFfnPersistentCache.hpp"
-#include "engine/AneFfnPersistentCache.hpp"
-#include "engine/AneFfnPersistentCache.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -196,40 +193,32 @@ AneFfnStart decide(const AneFfnModel &model, const AneFfnSetting &setting, Reque
     }
     // The split takes the calibration's least chunk, and judges itself
     // against the GPU alone as calibrated, forgetting the calibration once it
-    // loses.
+    // loses. A start that keeps no calibration forgets nothing: it has none
+    // to lose.
+    const bool keepsCalibration = setting.persistentCache;
     const auto take = [&](AneFfnPrepared &prepared, const ane_ffn::Calibration &calibration) {
       if (!prepared.split) return;
       prepared.split->setMinimumRows(calibration.minimumRows);
       prepared.split->setBreaker(ane_ffn::Breaker(calibration.gpu),
-                                 [forget = model.forget, maxAneUnits] { forget(maxAneUnits); });
+                                 [forget = model.forget, maxAneUnits, keepsCalibration] {
+                                   if (keepsCalibration) forget(maxAneUnits);
+                                 });
     };
     // No split gains enough: the start remembers so, and the GPU alone serves
     // its own context.
     const auto noGain = [&](std::string reason) {
-      if (setting.persistentCache) {
-        aneFfnPersistentCache().save(model.identifier, maxAneUnits, {});
-      } else {
-        model.remember(maxAneUnits, {});
-      }
+      if (setting.persistentCache) model.remember(maxAneUnits, {});
       assumed = 0;
       return gpuAloneServing(Kind::NoGain, std::move(reason));
     };
 
-    // Load from persistent cache if enabled
-    std::optional<ane_ffn::Calibration> calibration;
-    if (setting.persistentCache) {
-      calibration = aneFfnPersistentCache().load(model.identifier, maxAneUnits);
-    } else {
-      calibration = model.recall(maxAneUnits);
-    }
-    
+    // This Mac's calibration of the model, as the model's store keeps it.
+    std::optional<ane_ffn::Calibration> calibration =
+        setting.persistentCache ? model.recall(maxAneUnits) : std::nullopt;
+
     // --recalibrate-ane: forget saved calibration and recalibrate from scratch.
     if (setting.recalibrate && calibration) {
-      if (setting.persistentCache) {
-        aneFfnPersistentCache().remove(model.identifier, maxAneUnits);
-      } else {
-        model.forget(maxAneUnits);
-      }
+      if (setting.persistentCache) model.forget(maxAneUnits);
       calibration.reset();
       logLine("Forgetting saved ANE calibration and recalibrating from scratch.");
     }
@@ -266,11 +255,7 @@ AneFfnStart decide(const AneFfnModel &model, const AneFfnSetting &setting, Reque
     take(prepared, made);
     AneFfnStart start = serve(std::move(prepared), *chosen, *minimumRows, ": " + timed + " on the GPU alone",
                               "calibrated");
-    if (setting.persistentCache) {
-      aneFfnPersistentCache().save(model.identifier, maxAneUnits, made);
-    } else {
-      model.remember(maxAneUnits, made);
-    }
+    if (setting.persistentCache) model.remember(maxAneUnits, made);
     return start;
   } catch (const ane::Interrupted &) {
     throw;

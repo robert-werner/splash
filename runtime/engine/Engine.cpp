@@ -67,15 +67,7 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
                            config_.maxBatchSize,
                            config_.adaptiveBatching ? config_.targetGpuUtilization : 0.98,
                            config_.targetP99LatencyMs)
-                       : std::nullopt),
-      asyncKvSwap_(config_.enableAsyncKvSwap
-                   ? std::make_optional<AsyncKvSwap>(AsyncKvSwap::Config{
-                       .swapDir = config_.kvSwapPath,
-                       .ramCapacityBytes = 0,  // Will be updated after memory plan initialization
-                       .swapThreshold = config_.kvSwapThreshold,
-                       .backgroundThreads = 1,
-                       .enabled = true})
-                   : std::nullopt) {
+                       : std::nullopt) {
   if (!config_.maxContext || !config_.vocabularySize) {
     throw std::invalid_argument("context and vocabulary sizes must be positive");
   }
@@ -91,21 +83,6 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
     throw std::invalid_argument("prefill chunk size must be between 512 and 32768");
   if (config_.targetP99LatencyMs <= 0.0 || !std::isfinite(config_.targetP99LatencyMs))
     throw std::invalid_argument("target P99 latency must be positive and finite");
-  if (config_.enableAsyncKvSwap) {
-    if (config_.kvSwapPath.empty())
-      throw std::invalid_argument("async KV swap requires a non-empty swap directory path");
-    if (config_.kvSwapThreshold <= 0.0 || config_.kvSwapThreshold >= 1.0)
-      throw std::invalid_argument("KV swap threshold must be in (0.0, 1.0)");
-    asyncKvSwap_->start();
-    // Connect AsyncKvSwap to cache for LRU tracking
-    cache_.kv().setAsyncSwap(&asyncKvSwap_.value());
-  }
-}
-
-Engine::~Engine() noexcept {
-  if (asyncKvSwap_) {
-    asyncKvSwap_->stop();
-  }
 }
 
 void Engine::submit(EngineRequest value) {
@@ -1977,48 +1954,6 @@ void Engine::apply(const BatchPlan &plan, std::span<const std::vector<Capture>> 
           static_cast<uint32_t>(active.exactTokens.size()) -
           result.outputTokensWithoutKv;
       publishCommittedBlocks(active, storedTokens);
-      
-      // Phase 3: AsyncKvSwap integration - decode path triggers
-      if (asyncKvSwap_) {
-        // 1. Track page access for LRU (all accessed pages in this decode cycle)
-        const PageTableView pageTable = cache_.pageTable(active.request.id);
-        for (uint32_t pageIndex = 0; pageIndex < pageTable.pages.size(); ++pageIndex) {
-          const uint32_t pageId = pageTable.pages[pageIndex];
-          // Track access with page size (KvCache::pageTokens * token size estimate)
-          constexpr size_t estimatedBytesPerPage = 4 * 1024 * 1024; // 4 MiB per page
-          asyncKvSwap_->touchPage(pageId, estimatedBytesPerPage);
-        }
-        
-        // 2. Check for hot tier overflow and trigger async eviction
-        const double ramUsage = asyncKvSwap_->ramUsageFraction();
-        if (ramUsage >= config_.kvSwapThreshold) {
-          // Mark LRU pages as cold candidates before triggering swap
-          const uint32_t hotTierPages = config_.kvSwapHotTier / KvCache::pageTokens;
-          if (pageTable.pages.size() > hotTierPages) {
-            // Register oldest pages (beyond hot tier) as cold candidates
-            for (uint32_t i = 0; i < pageTable.pages.size() - hotTierPages; ++i) {
-              asyncKvSwap_->registerColdPage(pageTable.pages[i]);
-            }
-          }
-          asyncKvSwap_->swapOutColdPages();
-        }
-        
-        // 3. Prefetch hint: for sequential decode, prefetch next likely pages
-        // Predict next page access for long contexts (simple sequential pattern)
-        if (storedTokens > 0 && storedTokens % KvCache::pageTokens < 16) {
-          // Near page boundary - prefetch next page if it exists and is swapped
-          const uint32_t nextPageIndex = storedTokens / KvCache::pageTokens + 1;
-          if (nextPageIndex < pageTable.pages.size()) {
-            const uint32_t nextPageId = pageTable.pages[nextPageIndex];
-            if (asyncKvSwap_->isSwapped(nextPageId)) {
-              asyncKvSwap_->prefetchPage(nextPageId, [](bool success) {
-                // Prefetch completion - no action needed, page will be ready
-                static_cast<void>(success);
-              });
-            }
-          }
-        }
-      }
     }
     const uint64_t completionTokens =
         active.exactTokens.size() - active.promptTokens;
