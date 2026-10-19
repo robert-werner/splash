@@ -11,7 +11,18 @@
 #define SPLASH_MAXIMUM_PHYSICAL_KV_TOKENS                                  \
   (SPLASH_MAXIMUM_CONTEXT_TOKENS + SPLASH_SPECULATIVE_SCRATCH_TOKENS)
 #define SPLASH_MAXIMUM_BATCH_WIDTH 4u
+// Rows of one prefill command's chunk: the scheduler never hands a prefill
+// dispatch more rows than this, and every prefill scratch tensor, kernel
+// contract and tile grid is sized from it. PREFILL_ANALYSIS.md has the
+// memory cost of each value: the shared prefill arena grows by 791 MiB from
+// 2048 to 4096 and by 2374 MiB to 8192, which comes out of the KV pool (at
+// int4 KV and 262,144 context, 4096 leaves 0.77 GiB of the pool spare and
+// 8192 shrinks the usable context to 212,985 tokens). 2048 is the shipped
+// value; a build may override it, and every static assertion that ties the
+// tiles to the budget holds at any multiple of GGUF_PREFILL_ROWS (128).
+#ifndef SPLASH_PREFILL_TOKEN_BUDGET
 #define SPLASH_PREFILL_TOKEN_BUDGET 2048u
+#endif
 #define SPLASH_DRAFT_SLIDING_WINDOW 2048u
 #define SPLASH_TARGET_KV_BLOCK_TOKENS 32u
 // Rows per KV head (and per query group) of one lane's verify chunk staging:

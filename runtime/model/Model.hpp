@@ -443,7 +443,9 @@ maskWordsPerToken(uint32_t vocabularySize) noexcept {
 // and attention-kernel geometry live with their operators.
 struct ExecutionLimits final {
   static constexpr uint32_t maximumBatchWidth = 4;
-  static constexpr uint32_t prefillTokenBudget = 2048;
+  // The prefill chunk's rows, from the one ABI constant that sizes the
+  // kernels and the arenas with it (metal/abi/ExecutionGeometry.h).
+  static constexpr uint32_t prefillTokenBudget = SPLASH_PREFILL_TOKEN_BUDGET;
   // KV pages startup warmup runs on, from page 0: the runway the engine's KV
   // pool allocates when it is built.
   static constexpr uint32_t warmupKvPages =
