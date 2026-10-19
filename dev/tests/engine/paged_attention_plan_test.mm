@@ -75,11 +75,22 @@ void checkPrefillSlotOrientation(uint32_t queryHeads, kv::Layout layout) {
           "prefill slot orientation cases omitted unequal axes, partial tiles or splits");
 }
 
+// The pipeline a format's attention runs: one name per format, never a
+// fallback to another format's kernels. INT4 shares INT8's scales but not its
+// value layout, so it has kernels of its own.
+std::string attentionKernel(kv::Format format, std::string_view base) {
+  switch (format) {
+  case kv::Format::Int4: return std::string(base) + "_q4_split";
+  case kv::Format::Int8: return std::string(base) + "_q8_split";
+  case kv::Format::BFloat16: break;
+  }
+  return std::string(base) + "_bf16_split";
+}
+
 void checkPlans(uint32_t queryHeads, kv::Layout layout) {
   const std::string geometrySuffix = layout.kvHeads == 4 ? "" : "_kv2_g8";
   const std::array<uint32_t, 1> zeroHistory{};
-  const std::string prefillSplit = std::string(layout.format == kv::Format::Int8
-      ? "prefill_attention_q8_split" : "prefill_attention_bf16_split") + geometrySuffix;
+  const std::string prefillSplit = attentionKernel(layout.format, "prefill_attention") + geometrySuffix;
   const std::string prefillReduce = "prefill_attention_reduce" + geometrySuffix;
   checkPrefillSlotOrientation(queryHeads, layout);
   for (uint32_t rows = 1; rows <= 2048; ++rows) {
@@ -104,8 +115,7 @@ void checkPlans(uint32_t queryHeads, kv::Layout layout) {
                 bound.statisticsBytes >= plan.workspace.statisticsBytes,
             "prefill arena omitted a valid shorter plan");
   }
-  const std::string verifySplit = std::string(layout.format == kv::Format::Int8
-      ? "verify_attention_q8_split" : "verify_attention_bf16_split") + geometrySuffix;
+  const std::string verifySplit = attentionKernel(layout.format, "verify_attention") + geometrySuffix;
   const std::string verifyReduce = "verify_attention_reduce" + geometrySuffix;
   for (uint32_t lanes = 1; lanes <= 4; ++lanes) {
     const std::array<uint32_t, 4> histories{0, 31, 16384, 131072};
@@ -197,26 +207,50 @@ struct Case final {
 
   uint32_t page(uint32_t lane, uint32_t token) const { return pages[lane][token / 32]; }
 
-  float key(uint32_t lane, uint32_t head, uint32_t token,
-             uint32_t dimension) const {
+  // Where a tensor's element sits in a page's slab, as the kernels' index
+  // functions place it: keys token-major in every format; values token-major
+  // for INT4 (so its two elements a byte are one token's neighbours) and
+  // dimension-major for the others.
+  uint64_t elementOf(bool valueTensor, uint32_t head, uint32_t token,
+                     uint32_t dimension) const {
+    if (valueTensor && layout.format != kv::Format::Int4)
+      return splash_kv_value_element(head, token % 32, dimension);
+    return splash_kv_key_element(head, token % 32, dimension);
+  }
+
+  // An INT4 element of a packed tensor: elements 2k and 2k + 1 share byte k,
+  // the even one in the low nibble (the store's packing, paged_store_row.h).
+  static int int4At(const uint8_t *tensor, uint64_t element) {
+    const uint8_t byte = tensor[element / 2];
+    const uint32_t nibble = element % 2 == 0 ? (byte & 0x0Fu) : (byte >> 4);
+    return int(nibble) - ((nibble & 0x8u) != 0 ? 16 : 0);
+  }
+
+  float stored(bool valueTensor, uint32_t lane, uint32_t head, uint32_t token,
+               uint32_t dimension) const {
     const uint32_t id = page(lane, token);
-    const uint64_t index = splash_kv_key_element(head, token % 32, dimension);
+    const uint64_t index = elementOf(valueTensor, head, token, dimension);
     const uint64_t scale = splash_kv_scale_element(head, token % 32);
+    const uint32_t tensor = valueTensor ? SPLASH_KV_VALUES : SPLASH_KV_KEYS;
+    const uint32_t scales =
+        valueTensor ? SPLASH_KV_VALUE_SCALES : SPLASH_KV_KEY_SCALES;
     if (layout.format == kv::Format::BFloat16)
-      return bf16ToFloat(pool.slab<uint16_t>(kLayer, SPLASH_KV_KEYS, id)[index]);
-    return pool.slab<int8_t>(kLayer, SPLASH_KV_KEYS, id)[index] *
-           pool.slab<float>(kLayer, SPLASH_KV_KEY_SCALES, id)[scale];
+      return bf16ToFloat(pool.slab<uint16_t>(kLayer, tensor, id)[index]);
+    if (layout.format == kv::Format::Int4)
+      return float(int4At(pool.slab<uint8_t>(kLayer, tensor, id), index)) *
+             pool.slab<float>(kLayer, scales, id)[scale];
+    return pool.slab<int8_t>(kLayer, tensor, id)[index] *
+           pool.slab<float>(kLayer, scales, id)[scale];
+  }
+
+  float key(uint32_t lane, uint32_t head, uint32_t token,
+            uint32_t dimension) const {
+    return stored(false, lane, head, token, dimension);
   }
 
   float value(uint32_t lane, uint32_t head, uint32_t token,
-               uint32_t dimension) const {
-    const uint32_t id = page(lane, token);
-    const uint64_t index = splash_kv_value_element(head, token % 32, dimension);
-    const uint64_t scale = splash_kv_scale_element(head, token % 32);
-    if (layout.format == kv::Format::BFloat16)
-      return bf16ToFloat(pool.slab<uint16_t>(kLayer, SPLASH_KV_VALUES, id)[index]);
-    return pool.slab<int8_t>(kLayer, SPLASH_KV_VALUES, id)[index] *
-           pool.slab<float>(kLayer, SPLASH_KV_VALUE_SCALES, id)[scale];
+              uint32_t dimension) const {
+    return stored(true, lane, head, token, dimension);
   }
 };
 
@@ -273,25 +307,51 @@ Case makeCase(metal::MetalBackend &backend, uint32_t queryHeads,
       const uint32_t id = data.page(lane, token);
       for (uint32_t head = 0; head < layout.kvHeads; ++head) {
         const uint64_t slot = splash_kv_scale_element(head, token % 32);
-        if (layout.format == kv::Format::Int8) {
+        if (layout.format != kv::Format::BFloat16) {
           data.pool.slab<float>(kLayer, SPLASH_KV_KEY_SCALES, id)[slot] = 0.006f;
           data.pool.slab<float>(kLayer, SPLASH_KV_VALUE_SCALES, id)[slot] = 0.007f;
         }
+        // The history's own values, as the format stores them: INT8 and
+        // BF16 whole elements, INT4 one byte per pair of dimensions with the
+        // even dimension in the low nibble (the store's packing).
+        const auto rawOf = [&](bool valueTensor, uint32_t dimension) {
+          return valueTensor ? int((token * 53 + head * 79 + dimension * 29 +
+                                    token * dimension * 5 + lane * 19) % 255) - 127
+                             : int((token * 37 + head * 101 + dimension * 17 +
+                                    token * dimension * 3 + lane * 7) % 255) - 127;
+        };
+        const auto codeOf = [&](bool valueTensor, uint32_t dimension) {
+          const int raw = rawOf(valueTensor, dimension);
+          const int magnitude = std::min((raw < 0 ? -raw : raw) / 18, 7);
+          return raw < 0 ? -magnitude : magnitude;
+        };
+        const auto storePair = [&](bool valueTensor, uint32_t dimension) {
+          const uint32_t tensor = valueTensor ? SPLASH_KV_VALUES : SPLASH_KV_KEYS;
+          const uint64_t element = data.elementOf(valueTensor, head, token, dimension);
+          data.pool.slab<uint8_t>(kLayer, tensor, id)[element / 2] =
+              uint8_t(uint32_t(codeOf(valueTensor, dimension) & 0xF) |
+                      (uint32_t(codeOf(valueTensor, dimension + 1) & 0xF) << 4));
+        };
+        if (layout.format == kv::Format::Int4) {
+          for (uint32_t dimension = 0; dimension < 256; dimension += 2) {
+            storePair(false, dimension);
+            storePair(true, dimension);
+          }
+          continue;
+        }
         for (uint32_t dimension = 0; dimension < 256; ++dimension) {
-          const int key = int((token * 37 + head * 101 + dimension * 17 +
-                               token * dimension * 3 + lane * 7) % 255) - 127;
-          const int value = int((token * 53 + head * 79 + dimension * 29 +
-                                 token * dimension * 5 + lane * 19) % 255) - 127;
           const uint64_t keyIndex = splash_kv_key_element(head, token % 32, dimension);
-          const uint64_t valueIndex = splash_kv_value_element(head, token % 32, dimension);
+          const uint64_t valueIndex = data.elementOf(true, head, token, dimension);
           if (layout.format == kv::Format::Int8) {
-            data.pool.slab<int8_t>(kLayer, SPLASH_KV_KEYS, id)[keyIndex] = key;
-            data.pool.slab<int8_t>(kLayer, SPLASH_KV_VALUES, id)[valueIndex] = value;
+            data.pool.slab<int8_t>(kLayer, SPLASH_KV_KEYS, id)[keyIndex] =
+                rawOf(false, dimension);
+            data.pool.slab<int8_t>(kLayer, SPLASH_KV_VALUES, id)[valueIndex] =
+                rawOf(true, dimension);
           } else {
             data.pool.slab<uint16_t>(kLayer, SPLASH_KV_KEYS, id)[keyIndex] =
-                floatToBf16(key * 0.006f);
+                floatToBf16(rawOf(false, dimension) * 0.006f);
             data.pool.slab<uint16_t>(kLayer, SPLASH_KV_VALUES, id)[valueIndex] =
-                floatToBf16(value * 0.007f);
+                floatToBf16(rawOf(true, dimension) * 0.007f);
           }
         }
       }
@@ -933,8 +993,9 @@ void ropeRangeMatchesPositions(metal::MetalBackend &backend) {
 
 int main(int argc, char **argv) {
   try {
-    require(argc >= 1 && argc <= 3, "usage: paged-attention-plan [METALLIB [--long]]");
-    for (auto format : {kv::Format::Int8, kv::Format::BFloat16})
+    require(argc >= 1 && argc <= 4,
+            "usage: paged-attention-plan [METALLIB [--long [FORMAT]]]");
+    for (auto format : {kv::Format::Int8, kv::Format::BFloat16, kv::Format::Int4})
       for (uint32_t heads : {24U, 16U})
         checkPlans(heads, {1, heads == 24 ? 4U : 2U, 256, format});
     if (argc == 1) {
@@ -953,10 +1014,14 @@ int main(int argc, char **argv) {
         for (bool verify : {false, true})
           checkProjection(backend, heads, {1, heads == 24 ? 4U : 2U, 256, kv::Format::Int8}, float32,
                           verify);
-    if (argc == 3 && std::string_view(argv[2]) == "--long") {
-      for (auto format : {kv::Format::Int8, kv::Format::BFloat16})
+    if (argc >= 3 && std::string_view(argv[2]) == "--long") {
+      // An optional format name narrows the long sweep, so one format's
+      // histories can be checked without the others' minutes of oracle.
+      const std::string_view only = argc == 4 ? argv[3] : "";
+      for (auto format : {kv::Format::Int8, kv::Format::BFloat16, kv::Format::Int4}) {
+        if (!only.empty() && only != kv::formatName(format)) continue;
         for (uint32_t heads : {24U, 16U})
-          for (uint32_t history : {131072U, 260096U}) {
+          for (uint32_t history : {131072U, 180224U, 260096U}) {
             const kv::Layout layout{1, heads == 24 ? 4U : 2U, 256, format};
             auto prefill = makeCase(backend, heads, layout, 1, 2048, history, false);
             checkReference(prefill, run<Phase::Prefill>(backend, prefill, true));
@@ -965,11 +1030,12 @@ int main(int argc, char **argv) {
             std::cout << "long attention: format=" << kv::formatName(format)
                       << " q=" << heads << " history=" << history << " PASS\n" << std::flush;
           }
+      }
       std::cout << "long paged attention plans: PASS\n";
       return 0;
     }
-    require(argc == 2, "usage: paged-attention-plan [METALLIB [--long]]");
-    for (auto format : {kv::Format::Int8, kv::Format::BFloat16})
+    require(argc == 2, "usage: paged-attention-plan [METALLIB [--long [FORMAT]]]");
+    for (auto format : {kv::Format::Int8, kv::Format::BFloat16, kv::Format::Int4})
     for (uint32_t heads : {24U, 16U}) {
       const kv::Layout layout{1, heads == 24 ? 4U : 2U, 256, format};
       for (const auto [history, rows] :

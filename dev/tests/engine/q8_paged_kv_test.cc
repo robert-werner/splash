@@ -84,9 +84,9 @@ void testLayouts() {
 }
 
 // INT4 halves INT8's data bytes and keeps its per-(token, head) scales, so a
-// page holds twice the tokens of INT8 for the same bytes. Nothing dispatches
-// the format yet (--kv-format int4 is refused); this pins the geometry the
-// kernels will be written against, and it is what doubles the context.
+// page holds twice the tokens of INT8 for the same bytes. This pins the host
+// geometry; int4_kv_test.cpp covers the value layout, the nibble ownership
+// rule and the kernels' plan names.
 void testInt4Geometry() {
   // The model this engine serves: 16 layers, 4 KV heads, 256-wide heads.
   constexpr Layout int8{16, 4, 256, Format::Int8};
