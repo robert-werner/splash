@@ -74,29 +74,6 @@ public:
     image_.repack(std::move(repack));
   }
 
-  // Quantized FFN tensor of a dense layer. Both of Prism ML's rotated
-  // formats run here: PQ2_0 and PTQ1_0, which decode to the same weights. The
-  // layer's placement in the hybrid config does not choose its format (the
-  // GGUF does, and per-layer selection is not implemented): it only says
-  // where the user means the layer to run, and a rotated layer there is
-  // declined by the ANE FFN split at runtime (Projection::takesPlaneViews)
-  // rather than failing the load.
-  void quantizedFfn(const std::string &name, uint64_t rows, uint64_t columns) {
-    const GgufTensor *tensor = find(name, quantizedType);
-    if (!tensor) return;
-    if (tensor->rows() != rows || tensor->columns() != columns) throw GgufError("unexpected shape for " + name);
-
-    const uint32_t format = imageFormat(tensor->type);
-    // The formats a dense FFN tensor may be of: the two Prism ML GGUFs keep
-    // their FFN weights in, and Q4_K, the unrotated format the ANE runs.
-    if (format != GGUF_FMT_PQ20 && format != GGUF_FMT_PTQ10 && format != GGUF_FMT_Q4K)
-      throw GgufError(name + " must be PQ2_0, PTQ1_0 or Q4_K, got " + std::to_string(format));
-
-    Repack repack = image_.planes(format, rows, columns, name);
-    repack.sources.push_back(tensorRows(*tensor, rows, ggufRowBytes(kQuantFormats[format], columns)));
-    image_.repack(std::move(repack));
-  }
-
   // The routed experts' gate and up tensors, of `experts` * width rows each:
   // ffn_gate_exps and ffn_up_exps, or llama.cpp's fused ffn_gate_up_exps
   // (create_tensor_gate_up_exps), each expert's gate rows then its up rows,
@@ -321,9 +298,9 @@ Image layerImage(const GgufFile &file, const QwenTargetDimensions &g, std::vecto
     b.quantized(p + "ffn_down_shexp.weight", g.hiddenSize, width);
     b.floatTensor(p + "ffn_gate_inp_shexp.weight", 1, g.hiddenSize);
   } else {
-    b.quantizedFfn(p + "ffn_gate.weight", g.intermediateSize, g.hiddenSize);
-    b.quantizedFfn(p + "ffn_up.weight", g.intermediateSize, g.hiddenSize);
-    b.quantizedFfn(p + "ffn_down.weight", g.hiddenSize, g.intermediateSize);
+    b.quantized(p + "ffn_gate.weight", g.intermediateSize, g.hiddenSize);
+    b.quantized(p + "ffn_up.weight", g.intermediateSize, g.hiddenSize);
+    b.quantized(p + "ffn_down.weight", g.hiddenSize, g.intermediateSize);
   }
   return b.finish();
 }

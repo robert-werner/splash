@@ -20,7 +20,6 @@ SANITIZER_CONFIG_DIGEST := $(shell printf '%s\0' $(CONFIG_DIGEST) \
 # Control-plane tests compile the runtime sources they check: their sanitizer
 # builds cannot use the unsanitized engine library, and none links a framework.
 CACHE_SOURCES := \
-	runtime/engine/AsyncKvSwap.cpp \
 	runtime/ops/KvCompression.cpp \
 	runtime/engine/KvPool.cpp \
 	runtime/engine/KvCache.cpp \
@@ -252,8 +251,7 @@ $(TEST_GGUF_FILE): dev/tests/engine/gguf_file_test.cpp runtime/model/GgufFile.cp
 $(TEST_MEMORY_TEST):	runtime/metal/DeviceCapabilities.cpp \
 	runtime/engine/MemoryPlan.cpp \
 		dev/tests/engine/engine_memory_plan_test.cpp
-$(TEST_KV_PAGE_CACHE_TEST): runtime/engine/AsyncKvSwap.cpp \
-		runtime/ops/KvCompression.cpp \
+$(TEST_KV_PAGE_CACHE_TEST): runtime/ops/KvCompression.cpp \
 		runtime/engine/KvPool.cpp \
 		runtime/engine/KvCache.cpp \
 		dev/tests/engine/kv_page_cache_test.cpp
