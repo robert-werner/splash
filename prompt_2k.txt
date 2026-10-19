@@ -1,0 +1,45 @@
+You are a helpful assistant. Read this document and answer the question.
+
+DOCUMENT START:
+[Section 00000] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00001] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00002] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00003] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00004] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00005] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00006] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00007] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00008] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00009] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00010] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00011] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00012] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00013] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00014] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00015] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00016] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00017] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00018] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+
+[Section 00019] The quick brown fox jumps over the lazy dog. This pangram contains most letters of the alphabet and is commonly used in typography testing. Programming languages like Python, JavaScript, C++, and Rust each have unique syntax and paradigms. Machine learning models process vast amounts of data to identify patterns and make predictions. Natural language processing enables computers to understand human communication.
+DOCUMENT END
+
+Question: What programming languages are mentioned in the document? List them.
