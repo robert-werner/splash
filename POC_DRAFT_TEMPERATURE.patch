@@ -1,0 +1,28 @@
+--- a/runtime/ops/DraftSelector.cpp
++++ b/runtime/ops/DraftSelector.cpp
+@@ -9,6 +9,12 @@
+ namespace splash::ops {
+ namespace {
+ 
++// EXPERIMENT: Compile-time draft temperature override
++// Test values: 0.6, 0.7, 0.8, 0.9, 1.0
++// Baseline (no override): use target temperature from policies[lane]
++// Expected optimum: 0.7-0.8 for 2-4 point acceptance gain
++constexpr float kDraftTemperatureOverride = 0.8f;
++
+ constexpr uint32_t kShards = SPLASH_DRAFT_SAMPLING_SHARDS;
+ constexpr uint32_t kPositions = SPLASH_DRAFT_PROPOSAL_TOKENS;
+ // Each position's group scores its 16 x 16 edge table eight edges per
+@@ -48,7 +54,11 @@ void DraftSelector::add(metal::CommandGraph &graph,
+   params.vocabulary = vocabulary_;
+   for (uint32_t lane = 0; lane < lanes; ++lane) {
+     params.anchor[lane] = anchors[lane];
+-    params.temperature[lane] = policies[lane].temperature;
++    // EXPERIMENT: Override draft temperature instead of using target temperature
++    // Original: params.temperature[lane] = policies[lane].temperature;
++    // POC: Use fixed draft temperature for exploration
++    params.temperature[lane] = kDraftTemperatureOverride;
++    
+     if (policies[lane].samples())
+       params.sampling_mask |= uint32_t{1} << lane;
+   }

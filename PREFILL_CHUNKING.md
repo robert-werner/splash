@@ -100,12 +100,37 @@ CLI flags to be added:
 - [x] Diagnostic logging for verification
 - [x] Build verification (compiles cleanly)
 
-### In Progress 🚧
-- [ ] End-to-end testing with 180K prompt
-- [ ] TTFT measurement verification
+### Testing Status 🧪
+**Date**: 2026-10-19  
+**Commit**: 52cf7a4d (main branch)
+
+#### Test Attempts:
+1. **serve-native mode test**: Failed with exit code 76, "protocol failure"
+   - Issue: serve-native expects binary protocol, not plain text prompt
+   - Generated 180K prompt (234,000 chars) successfully
+   - Test aborted after 10.4s (error time, not actual prefill)
+
+2. **HTTP server mode test**: Cannot execute
+   - Issue: `./build/splash serve` command not available
+   - Only `serve-native` command exists in current build
+   - Need Python HTTP server wrapper or different test approach
+
+#### Blockers:
+- ❌ No HTTP server endpoint available for testing
+- ❌ serve-native protocol requires binary framing (not plain text stdin)
+- ❌ Python server requires dependencies (transformers module missing)
+
+#### Next Steps:
+- [ ] Use Python server wrapper (./splash) with proper venv setup
+- [ ] OR: Implement binary protocol framing for serve-native test
+- [ ] OR: Test via existing test infrastructure (if available)
+- [ ] Verify actual TTFT with 180K prompt
+- [ ] Measure total prefill time and throughput
 
 ### TODO 📋
-- [ ] Production testing and measurement
+- [ ] Production testing and measurement with real 180K prompt
+- [ ] Verify TTFT reduction (target: 870s → 20s, 97.7%)
+- [ ] Verify throughput improvement (target: 207 → 420 tok/s)
 - [ ] Add configuration flags (--prefill-chunk-size, --prefill-chunking-threshold)
 - [ ] Progress event emission between chunks
 - [ ] Handle edge cases (images spanning chunk boundaries)
