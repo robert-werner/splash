@@ -93,20 +93,22 @@ CLI flags to be added:
 
 ### Completed ✅
 - [x] Design document
-- [x] Core constants defined
-- [x] ChunkedPrefillTicket class skeleton
+- [x] Core constants defined (kDefaultPrefillChunkSize=8192, kChunkingThreshold=16384)
+- [x] ChunkedPrefillTicket class fully implemented
+- [x] Chunking logic in prefillAsync() integrated
+- [x] Chunk boundary handling (KV cache continuity, state preservation)
+- [x] Diagnostic logging for verification
+- [x] Build verification (compiles cleanly)
 
 ### In Progress 🚧
-- [ ] Chunking logic in prefillAsync()
-- [ ] Chunk boundary handling (state, KV cache)
-- [ ] Progress event emission
+- [ ] End-to-end testing with 180K prompt
+- [ ] TTFT measurement verification
 
 ### TODO 📋
-- [ ] Test with 180K prompt
-- [ ] Measure TTFT reduction
-- [ ] Verify accuracy (compare outputs)
-- [ ] Add configuration flags
-- [ ] Handle edge cases (images, state captures at boundaries)
+- [ ] Production testing and measurement
+- [ ] Add configuration flags (--prefill-chunk-size, --prefill-chunking-threshold)
+- [ ] Progress event emission between chunks
+- [ ] Handle edge cases (images spanning chunk boundaries)
 
 ## Technical Notes
 
