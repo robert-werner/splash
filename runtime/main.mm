@@ -157,6 +157,9 @@ void printUsage(std::string_view executable) {
       " [--max-image-patches PATCHES] [--persistent-cache on|off] [--cache-dir DIRECTORY]"
       " [--max-cache-disk-writes BYTES]"
       " [--idle-release SECONDS|off] [--idle-sleep prevent|allow] [--ane on|off]"
+      " [--ane-share SHARE] [--ane-minimum-rows ROWS]"
+      " [--ssd-kv on|off] [--ssd-kv-path DIRECTORY] [--hot-tier-tokens N]"
+      " [--max-context-extended N] [--prefetch-pages N]"
       " [--relaunch-context TOKENS]");
   writeStderrLine("       " + command + " model-check mlx-affine none|safetensors CONFIG [DRAFT_CONFIG]");
   writeStderrLine("       " + command + " model-check gguf none|gguf CONFIG GGUF_METADATA [DRAFT_CONFIG]");
@@ -224,6 +227,29 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.resources.ssdKvEnabled = arguments.ssdKvEnabled;
   config.resources.ssdKvPath = arguments.ssdKvPath;
   config.resources.hotTierTokens = arguments.hotTierTokens;
+  config.resources.maxContextExtended = arguments.maxContextExtended;
+  config.resources.prefetchPages = arguments.prefetchPages;
+  // The extended tier is the resources' own choice (RuntimeResources::create
+  // reads config.engine there), so its switches go into both configs: the
+  // resources' now, the native loop's below and in Bootstrap.
+  config.resources.engine.ssdKvEnabled = arguments.ssdKvEnabled;
+  config.resources.engine.ssdKvPath = arguments.ssdKvPath;
+  config.resources.engine.hotTierTokens = arguments.hotTierTokens;
+  config.resources.engine.maxContextExtended = arguments.maxContextExtended;
+  config.resources.engine.prefetchPages = arguments.prefetchPages;
+  config.resources.engine.kvCompression = arguments.kvCompression;
+  config.resources.engine.kvDefragmentation = arguments.kvDefragmentation;
+  // --ane-share runs the split the share names instead of calibrating one, as
+  // the dev tools' --ane-ffn-share does; without it the split calibrates
+  // (AneFfnSetting::given stays empty). A share of 0 runs the GPU alone:
+  // ops::ane_ffn::nearestUnits takes a share in (0, 1).
+  if (arguments.aneShare) {
+    if (*arguments.aneShare > 0.0)
+      config.resources.aneFfn.given = engine::AneFfnSetting::Given{
+          *arguments.aneShare, arguments.aneMinimumRows.value_or(ops::AneFfn::kMinimumRows)};
+    else
+      config.resources.aneFfn.enabled = false;
+  }
   config.resources.aneLayerIndices = arguments.aneLayerIndices;
   config.resources.aneTelemetryEnabled = arguments.aneTelemetryEnabled;
   config.nativeLoop.engine.maxContext = arguments.maxContext;
@@ -235,6 +261,11 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.nativeLoop.engine.preemptThreshold = arguments.preemptThreshold;
   config.nativeLoop.engine.kvCompression = arguments.kvCompression;
   config.nativeLoop.engine.adaptiveBatching = arguments.adaptiveBatching;
+  config.nativeLoop.engine.ssdKvEnabled = arguments.ssdKvEnabled;
+  config.nativeLoop.engine.ssdKvPath = arguments.ssdKvPath;
+  config.nativeLoop.engine.hotTierTokens = arguments.hotTierTokens;
+  config.nativeLoop.engine.maxContextExtended = arguments.maxContextExtended;
+  config.nativeLoop.engine.prefetchPages = arguments.prefetchPages;
   return config;
 }
 

@@ -1679,6 +1679,18 @@ def _native_command(args, relaunch_context=None):
         )
     if args.disable_ane:
         command.extend(("--ane", "off"))
+    if args.ssd_kv == "on":
+        command.extend(("--ssd-kv", "on", "--ssd-kv-path", str(args.ssd_kv_path)))
+    if args.hot_tier_tokens is not None:
+        command.extend(("--hot-tier-tokens", str(args.hot_tier_tokens)))
+    if args.max_context_extended is not None:
+        command.extend(("--max-context-extended", str(args.max_context_extended)))
+    if args.prefetch_pages is not None:
+        command.extend(("--prefetch-pages", str(args.prefetch_pages)))
+    if args.ane_share is not None:
+        command.extend(("--ane-share", str(args.ane_share)))
+    if args.ane_minimum_rows is not None:
+        command.extend(("--ane-minimum-rows", str(args.ane_minimum_rows)))
     if args.decode_share is not None:
         command.extend(("--decode-share", str(args.decode_share)))
     if args.max_batch_size != 4:

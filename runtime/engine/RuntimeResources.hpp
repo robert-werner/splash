@@ -160,6 +160,11 @@ struct RuntimeResourcesConfig {
   bool ssdKvEnabled = false;
   std::string ssdKvPath;
   uint32_t hotTierTokens = 200 * 1024; // 200K tokens
+  // --max-context-extended N: the tokens the hot and cold tiers hold together.
+  // Zero keeps the plain KvPageTier, which holds the memory plan's context.
+  uint32_t maxContextExtended = 0;
+  // --prefetch-pages N: cold tier pages read ahead of a sequential access.
+  uint32_t prefetchPages = 16;
   
   // Phase 2: ANE Hybrid Quantization
   // Per-layer quantization configuration: indices of FFN layers to run on ANE (Q4_K unrotated).

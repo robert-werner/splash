@@ -724,8 +724,21 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
           const std::filesystem::path coldSlots = ssdPath / "kv_cold_slots.bin";
           const std::filesystem::path coldRecords = ssdPath / "kv_cold_records.bin";
           
-          model::SlotFile::Persistence hotPersist{hotSlots, hotRecords, {}, 0};
-          model::SlotFile::Persistence coldPersist{coldSlots, coldRecords, {}, 0};
+          // A persistent slot file needs a label size, as the shared KV and
+          // state files above take it: without one SlotFile::open refuses and
+          // the whole cold tier falls back to "SSD cache KV storage disabled".
+          // The tag keeps the two tiers' files from being mistaken for the
+          // shared cache's.
+          const std::string hotTag = cacheNamespace + "/hot";
+          const std::string coldTag = cacheNamespace + "/cold";
+          const std::vector<std::byte> hotBytes(
+              reinterpret_cast<const std::byte *>(hotTag.data()),
+              reinterpret_cast<const std::byte *>(hotTag.data()) + hotTag.size());
+          const std::vector<std::byte> coldBytes(
+              reinterpret_cast<const std::byte *>(coldTag.data()),
+              reinterpret_cast<const std::byte *>(coldTag.data()) + coldTag.size());
+          model::SlotFile::Persistence hotPersist{hotSlots, hotRecords, hotBytes, sizeof(KvBlockLabel)};
+          model::SlotFile::Persistence coldPersist{coldSlots, coldRecords, coldBytes, sizeof(KvBlockLabel)};
           
           auto hotFile = std::make_shared<model::SlotFile>(slotBytes, diskBudget, hotPersist);
           auto coldFile = std::make_shared<model::SlotFile>(slotBytes, diskBudget, coldPersist);

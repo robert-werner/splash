@@ -98,6 +98,42 @@ def parse_max_context(value):
     return tokens
 
 
+def parse_positive_int(value):
+    """A positive integer, for flags that take a plain count."""
+    try:
+        number = int(value)
+    except ValueError:
+        number = 0
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return number
+
+
+def parse_extended_tokens(value):
+    """A token count for the extended tier; past the model's own window."""
+    normalized = str(value).strip().upper()
+    scale = {"K": 1024, "M": 1024 * 1024}
+    try:
+        suffix = normalized[-1] if normalized and normalized[-1].isalpha() else ""
+        tokens = int(normalized[:-1] if suffix else normalized) * scale.get(suffix, 1)
+    except (ValueError, KeyError):
+        tokens = 0
+    if tokens < 1:
+        raise argparse.ArgumentTypeError("must be a token count, such as 1M or 1000000")
+    return tokens
+
+
+def parse_ane_share(value):
+    """A share of the prefill FFN in [0, 1); 0 keeps the FFN on the GPU."""
+    try:
+        share = float(value)
+    except ValueError:
+        share = -1.0
+    if not 0.0 <= share < 1.0:
+        raise argparse.ArgumentTypeError("must be a share in [0, 1), such as 0.75")
+    return share
+
+
 def parse_max_memory(value):
     """'auto' (None), or a byte count with an optional K, M or G suffix."""
     normalized = value.strip().upper()
@@ -442,6 +478,79 @@ SERVE_OPTIONS = (
                 "target KV cache storage (default: int8); int4 nearly halves "
                 "the bytes a token costs, bf16 uses more memory"
             ),
+        ),
+    ),
+    ServeOption(
+        "--ssd-kv",
+        "memory",
+        dict(
+            choices=("on", "off"),
+            default="off",
+            help="extend the KV cache into a cold SSD tier: the hot tier stays in "
+            "RAM up to --hot-tier-tokens and the rest lives on disk (default: off)",
+        ),
+    ),
+    ServeOption(
+        "--ssd-kv-path",
+        "memory",
+        dict(
+            default=None,
+            metavar="DIRECTORY",
+            help="directory holding the cold tier's slots (required by --ssd-kv on)",
+        ),
+    ),
+    ServeOption(
+        "--hot-tier-tokens",
+        "memory",
+        dict(
+            type=parse_extended_tokens,
+            default=None,
+            metavar="TOKENS",
+            help="tokens the RAM tier keeps before demoting pages to the cold tier "
+            "(default: the engine's 200K)",
+        ),
+    ),
+    ServeOption(
+        "--max-context-extended",
+        "memory",
+        dict(
+            type=parse_extended_tokens,
+            default=None,
+            metavar="TOKENS",
+            help="tokens the hot and cold tiers hold together, past what RAM alone "
+            "holds; needs --ssd-kv on (default: off)",
+        ),
+    ),
+    ServeOption(
+        "--prefetch-pages",
+        "memory",
+        dict(
+            type=parse_positive_int,
+            default=None,
+            metavar="N",
+            help="cold tier pages read ahead of a sequential access (default: 16)",
+        ),
+    ),
+    ServeOption(
+        "--ane-share",
+        "performance",
+        dict(
+            type=parse_ane_share,
+            default=None,
+            metavar="SHARE",
+            help="share of the prefill FFN's intermediate channels the Neural Engine "
+            "takes instead of calibrating one, in [0, 1); 0 keeps the FFN on the GPU "
+            "(default: calibrate)",
+        ),
+    ),
+    ServeOption(
+        "--ane-minimum-rows",
+        "performance",
+        dict(
+            type=parse_positive_int,
+            default=None,
+            metavar="ROWS",
+            help="least chunk rows the given --ane-share split takes (default: 512)",
         ),
     ),
     ServeOption(
@@ -816,6 +925,20 @@ def check_serve_arguments(parser, args):
         )
     if args.cache_dir is not None and not args.persistent_cache:
         parser.error("--cache-dir needs --persistent-cache")
+    if args.ssd_kv == "on" and not args.ssd_kv_path:
+        parser.error("--ssd-kv on needs --ssd-kv-path")
+    if args.ssd_kv == "off" and args.max_context_extended is not None:
+        parser.error("--max-context-extended needs --ssd-kv on")
+    if args.ssd_kv == "on" and args.max_context_extended is None:
+        parser.error("--ssd-kv on needs --max-context-extended: it is the tokens the cold tier holds")
+    if (
+        args.max_context_extended is not None
+        and args.hot_tier_tokens is not None
+        and args.max_context_extended <= args.hot_tier_tokens
+    ):
+        parser.error("--max-context-extended must exceed --hot-tier-tokens")
+    if args.ane_minimum_rows is not None and args.ane_share is None:
+        parser.error("--ane-minimum-rows needs --ane-share")
 
 
 def serve_argv(args):

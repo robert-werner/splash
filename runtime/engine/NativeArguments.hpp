@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -91,6 +92,13 @@ struct NativeArguments final {
   uint32_t maxContextExtended = 0;
   // --prefetch-pages N: prefetch window size for cold tier sequential access.
   uint32_t prefetchPages = 16;
+  // --ane-share SHARE: the share of the prefill FFN's intermediate channel
+  // units the Neural Engine takes instead of the calibrated split; none
+  // calibrates. Zero runs the GPU alone.
+  std::optional<double> aneShare;
+  // --ane-minimum-rows N: the least rows of a chunk the given split takes;
+  // none takes ops::AneFfn::kMinimumRows.
+  std::optional<uint32_t> aneMinimumRows;
   
   // Week 1 optimizations
   // --kv-compression on|off: enable lossless RLE compression for KV cache (saves 10-15%).

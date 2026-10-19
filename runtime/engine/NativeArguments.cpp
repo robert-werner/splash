@@ -241,6 +241,19 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
     } else if (option == "--prefetch-pages") {
       if (!parsePositive(value, result.prefetchPages))
         throw UsageError("--prefetch-pages requires a positive integer");
+    } else if (option == "--ane-share") {
+      double share = 0.0;
+      if (!parseFinite(value, share) || share < 0.0 || share >= 1.0)
+        throw UsageError("--ane-share requires a share in [0, 1)");
+      result.aneShare = share;
+    } else if (option == "--ane-minimum-rows") {
+      uint32_t rows = 0;
+      if (!parsePositive(value, rows) || rows < ops::AneFfn::kMinimumRows ||
+          rows > ops::AneFfn::kMaximumRows)
+        throw UsageError("--ane-minimum-rows requires an integer in [" +
+                         std::to_string(ops::AneFfn::kMinimumRows) + ", " +
+                         std::to_string(ops::AneFfn::kMaximumRows) + "]");
+      result.aneMinimumRows = rows;
     } else if (option == "--kv-compression") {
       if (value != "on" && value != "off")
         throw UsageError("--kv-compression requires on or off");
@@ -312,6 +325,14 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
     throw UsageError("--cache-dir requires --persistent-cache on");
   if (result.ssdKvEnabled && result.ssdKvPath.empty())
     throw UsageError("--ssd-kv on requires --ssd-kv-path PATH");
+  // A cold tier holds what --max-context-extended asks for; without one the
+  // SSD tier is the plain KvPageTier and the hot tier's size means nothing.
+  if (result.ssdKvEnabled && result.maxContextExtended &&
+      result.maxContextExtended <= result.hotTierTokens)
+    throw UsageError("--max-context-extended must exceed --hot-tier-tokens (" +
+                     std::to_string(result.hotTierTokens) + "): the cold tier holds the rest");
+  if (result.aneMinimumRows && !result.aneShare)
+    throw UsageError("--ane-minimum-rows requires --ane-share");
   result.modelRoot = requireModelRoot(argv[2]);
   result.model = model::inspectModelRoot(result.modelRoot);
   result.maxContext = parseMaxContext(argv[3], result.model.capabilities);
