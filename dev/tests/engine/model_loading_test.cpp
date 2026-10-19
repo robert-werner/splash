@@ -109,8 +109,11 @@ splash::model::ImagePlan fileImage(const std::filesystem::path &path, std::strin
 
 void testStartupCapabilities() {
     using splash::model::ExecutionLimits;
+    // The prefill budget is the ABI's, which a build may override; the rest
+    // are this runtime's own and pinned.
     require(ExecutionLimits::maximumBatchWidth == 4 &&
-                ExecutionLimits::prefillTokenBudget == 2048 &&
+                ExecutionLimits::prefillTokenBudget == SPLASH_PREFILL_TOKEN_BUDGET &&
+                ExecutionLimits::prefillTokenBudget % 128 == 0 &&
                 ExecutionLimits::draftQueryRows == 8 &&
                 ExecutionLimits::draftProposalTokens == 7 &&
                 ExecutionLimits::targetVerifyRows == 8 &&
