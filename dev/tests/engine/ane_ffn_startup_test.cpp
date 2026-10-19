@@ -625,6 +625,62 @@ void testGivenShare() {
           "least rows without a share were taken");
 }
 
+// Share maps to the correct unit counts, and given share takes precedence over calibration.
+void testShareMapsToUnits() {
+  using ops::ane_ffn::nearestUnits;
+  // Share 0.5 of 34 units rounds to 17 units (nearest integer).
+  require(nearestUnits(0.5, 34) == 17, "share 0.5 of 34 units did not map to 17");
+  require(nearestUnits(0.24, 34) == 8, "share 0.24 of 34 units did not map to 8");
+  require(nearestUnits(0.01, 34) == 1, "share 0.01 of 34 units did not map to 1 (minimum)");
+  require(nearestUnits(0.99, 34) == 33, "share 0.99 of 34 units did not map to 33 (maximum)");
+  // Boundaries: share must be in (0, 1), units must be >= 2.
+  for (const double share : {0.0, 1.0, -0.1, 1.1})
+    rejects([&] { static_cast<void>(nearestUnits(share, 34)); }, "must lie in (0, 1)",
+            "share " + std::to_string(share) + " was accepted");
+  rejects([] { static_cast<void>(nearestUnits(0.5, 1)); }, "two units or more",
+          "share of a single-unit model was accepted");
+}
+
+// A given share skips calibration and uses the given units directly.
+void testGivenShareTakesPrecedence() {
+  Fake fake;
+  // With a given share, timings() is never called and the prepared split uses the given units.
+  Started started = start(fake, {.given = AneFfnSetting::Given{0.5}});
+  require(started.start.outcome.kind == Kind::Split && fake.timings == 0 && fake.prepared == std::pair(17u, false) &&
+              !fake.recalled && !fake.remembered,
+          "a given share of 0.5 did not skip calibration and use 17 units");
+  // Without a given share, calibration runs.
+  fake = {};
+  started = start(fake);
+  require(started.start.outcome.kind == Kind::Split && fake.timings == 1 && fake.prepared == std::pair(8u, true),
+          "calibration did not run when no share was given");
+}
+
+// Share 0 disables the split without asking the model.
+void testShareZeroDisables() {
+  Fake fake;
+  Started started = start(fake, AneFfnSetting::fromGiven(0.0, std::nullopt));
+  require(started.start.outcome.kind == Kind::Off && !fake.asked && !fake.timings && !fake.prepared &&
+              line(started.log, "The GPU runs the prefill FFN alone, as given."),
+          "share 0.0 did not disable the split: " + started.log);
+}
+
+// Minimum rows outside [512, 2048] are rejected with the documented message.
+void testMinimumRowsRejection() {
+  Fake fake;
+  for (const uint32_t rows : {0u, 511u, 2049u, 4096u})
+    rejects([&] { static_cast<void>(start(fake, {.given = AneFfnSetting::Given{0.5, rows}})); },
+            "ANE FFN split has no function of " + std::to_string(rows) + " rows",
+            "minimum rows " + std::to_string(rows) + " was accepted");
+  // Boundary values 512 and 2048 are accepted.
+  for (const uint32_t rows : {512u, 2048u}) {
+    fake = {};
+    Started started = start(fake, {.given = AneFfnSetting::Given{0.5, rows}});
+    require(started.start.outcome.kind == Kind::Split && has(started.log, "for chunks of " + std::to_string(rows)),
+            "minimum rows " + std::to_string(rows) + " was rejected");
+  }
+}
+
 } // namespace
 
 int main() {
@@ -643,6 +699,10 @@ int main() {
     testNoGain();
     testRemembered();
     testGivenShare();
+    testShareMapsToUnits();
+    testGivenShareTakesPrecedence();
+    testShareZeroDisables();
+    testMinimumRowsRejection();
     std::cout << "ane ffn startup tests passed\n";
     return EXIT_SUCCESS;
   } catch (const std::exception &error) {
