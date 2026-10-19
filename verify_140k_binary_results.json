@@ -1,0 +1,14 @@
+{
+  "baseline": {
+    "test_name": "baseline",
+    "context_size": 512,
+    "success": false,
+    "error": "Engine exited without ReadyEvent. stderr:\n15:11:55 Weights loaded in 3.47 s.\n15:11:55 Kernel policy for GPU family 10 with 16 cores.\n15:11:55 The GPU runs the prefill FFN alone, as given.\n15:11:55 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 1040 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.\n15:11:55 Pipeline warming: compiled 6 critical pipelines in 0.005 s\n15:12:01 Waiting for sufficient available memory to start; the macOS reserve remains protected...\n15:12:07 Weights loaded in 5.19 s.\n15:12:07 Kernel policy for GPU family 10 with 16 cores.\n15:12:07 The GPU runs the prefill FFN alone, as given.\n15:12:07 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 1040 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.\n15:12:07 Pipeline warming: compiled 6 critical pipelines in 0.002 s\nerror: runtime bootstrap failed [resource_assembly/model_loading]: not enough free memory to start: 1896 MiB reclaimable, 2048 MiB protected for macOS, system pressure warning; close memory-heavy applications and retry\n"
+  },
+  "reduced": {
+    "test_name": "reduced_140k",
+    "context_size": 140000,
+    "success": false,
+    "error": "Engine exited without ReadyEvent. stderr:\n15:12:41 Waiting for sufficient available memory to start; the macOS reserve remains protected...\n15:12:47 Weights loaded in 5.66 s.\n15:12:47 Kernel policy for GPU family 10 with 16 cores.\n15:12:47 The GPU runs the prefill FFN alone, as given.\n15:12:48 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 1040 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.\n15:12:48 Pipeline warming: compiled 6 critical pipelines in 0.011 s\n15:12:53 Weights loaded in 4.28 s.\nerror: runtime bootstrap failed [resource_assembly/model_loading]: not enough free memory to start: 1868 MiB reclaimable, 2048 MiB protected for macOS, system pressure critical; close memory-heavy applications and retry\n"
+  }
+}
