@@ -253,10 +253,8 @@ ENGINE_CPP_SOURCES := \
 	runtime/metal/PipelineWarming.cpp \
 	runtime/engine/MemoryPlan.cpp \
 	runtime/engine/AneFfnStartup.cpp \
-	runtime/engine/SpeculationTuning.cpp \
 	runtime/engine/Scheduler.cpp \
 	runtime/engine/DynamicBatching.cpp \
-	runtime/engine/PrefillChunking.cpp \
 		runtime/engine/MemoryTelemetry.cpp \
 		runtime/engine/AneTelemetry.cpp \
 		runtime/engine/Cache.cpp \

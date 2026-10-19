@@ -5977,9 +5977,6 @@ void testDecodeNearContextCeilingCoversVerifyRows() {
   Events events;
   EngineConfig config = test::engineConfig();
   config.maxContext = 64;
-  // The threshold defaults to 4096, past this context; the engine refuses a
-  // threshold above maxContext, so keep it inside the window under test.
-  config.continuousPrefillThreshold = 64;
   engine::Engine engine(config, resources, executor, events);
   guardReleases(storage, engine);
 

@@ -106,13 +106,6 @@ uint32_t parseMaxBatchSize(std::string_view value) {
   return result;
 }
 
-uint32_t parseContinuousAttentionThreshold(std::string_view value) {
-  uint32_t result = 0;
-  if (!parsePositive(value, result))
-    throw UsageError("--continuous-attention-threshold requires a positive integer");
-  return result;
-}
-
 std::filesystem::path requireModelRoot(std::string_view argument) {
   std::error_code error;
   const std::filesystem::path root =
@@ -197,8 +190,6 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       result.dynamicBatching = value == "on";
     } else if (option == "--target-gpu-utilization") {
       result.targetGpuUtilization = parseTargetGpuUtilization(value);
-    } else if (option == "--continuous-attention-threshold") {
-      result.continuousAttentionThreshold = parseContinuousAttentionThreshold(value);
     } else if (option == "--lazy-ane-allocation") {
       if (value != "on" && value != "off")
         throw UsageError("--lazy-ane-allocation requires on or off");
@@ -258,9 +249,6 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (value != "on" && value != "off")
         throw UsageError("--adaptive-batching requires on or off");
       result.adaptiveBatching = value == "on";
-    } else if (option == "--prefill-chunk-size") {
-      if (!parsePositive(value, result.prefillChunkSize) || result.prefillChunkSize < 512)
-        throw UsageError("--prefill-chunk-size requires a positive integer >= 512");
     } else if (option == "--fused-attention") {
       if (value != "on" && value != "off")
         throw UsageError("--fused-attention requires on or off");

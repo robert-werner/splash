@@ -660,17 +660,6 @@ SERVE_OPTIONS = (
         ),
     ),
     ServeOption(
-        "--continuous-attention-threshold",
-        "memory",
-        dict(
-            type=parse_max_context,
-            default=4096,
-            metavar="TOKENS",
-            help="use continuous attention (fused prefill) for prompts above this "
-            "length (default: 4096 tokens; 0 disables continuous attention)",
-        ),
-    ),
-    ServeOption(
         "--lazy-ane-allocation",
         "memory",
         dict(
@@ -760,16 +749,6 @@ SERVE_OPTIONS = (
             action="store_true",
             default=False,
             help="enable GPU utilization-based batch size adjustment (95-98%% target)",
-        ),
-    ),
-    ServeOption(
-        "--prefill-chunk-size",
-        "performance",
-        dict(
-            type=parse_max_context,
-            default=8192,
-            metavar="TOKENS",
-            help="maximum tokens per prefill chunk (default: 8192)",
         ),
     ),
     ServeOption(

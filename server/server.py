@@ -1683,8 +1683,6 @@ def _native_command(args, relaunch_context=None):
         command.extend(("--decode-share", str(args.decode_share)))
     if args.max_batch_size != 4:
         command.extend(("--max-batch-size", str(args.max_batch_size)))
-    if args.continuous_attention_threshold != 4096:
-        command.extend(("--continuous-attention-threshold", str(args.continuous_attention_threshold)))
     if args.max_image_pixels != image_input.MAX_PIXELS:
         command.extend(
             ("--max-image-patches", str(image_input.max_patches(args.max_image_pixels)))
@@ -1715,8 +1713,6 @@ def _native_command(args, relaunch_context=None):
         command.extend(("--kv-compression", "on"))
     if args.adaptive_batching:
         command.extend(("--adaptive-batching", "on"))
-    if args.prefill_chunk_size != 8192:
-        command.extend(("--prefill-chunk-size", str(args.prefill_chunk_size)))
     # Week 2 optimizations
     if args.fused_attention:
         command.extend(("--fused-attention", "on"))

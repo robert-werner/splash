@@ -174,7 +174,6 @@ void testServerCommandLines(const char *path) {
            read.decodeShare == meant.decodeShare &&
            read.maxBatchSize == meant.maxBatchSize &&
            read.dynamicBatching == meant.dynamicBatching &&
-           read.continuousAttentionThreshold == meant.continuousAttentionThreshold &&
            read.maxImagePatches == meant.maxImagePatches &&
            read.idleReleaseSeconds == meant.idleReleaseSeconds &&
            read.preventIdleSleep == meant.preventIdleSleep &&

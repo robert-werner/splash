@@ -77,10 +77,6 @@ Engine::Engine(EngineConfig config, Cache &cache, model::Model &model,
     throw std::invalid_argument("decode share must be nonnegative and finite");
   if (config_.maxBatchSize < 1 || config_.maxBatchSize > model::ExecutionLimits::maximumBatchWidth)
     throw std::invalid_argument("max batch size must be between 1 and 16");
-  if (config_.continuousPrefillThreshold > config_.maxContext)
-    throw std::invalid_argument("continuous prefill threshold cannot exceed max context");
-  if (config_.prefillChunkSize < 512 || config_.prefillChunkSize > 32768)
-    throw std::invalid_argument("prefill chunk size must be between 512 and 32768");
   if (config_.targetP99LatencyMs <= 0.0 || !std::isfinite(config_.targetP99LatencyMs))
     throw std::invalid_argument("target P99 latency must be positive and finite");
 }

@@ -58,8 +58,6 @@ struct NativeArguments final {
   bool priorityScheduling = EngineConfig{}.priorityScheduling;
   // --preempt-threshold N: token count where long prefills yield.
   uint32_t preemptThreshold = EngineConfig{}.preemptThreshold;
-  // --continuous-attention-threshold N: token count for continuous prefill.
-  uint32_t continuousAttentionThreshold = EngineConfig{}.continuousPrefillThreshold;
   uint32_t maxImagePatches = ops::kMaximumImagePatches;
   // --idle-release SECONDS|off, infinite for off.
   double idleReleaseSeconds = RuntimeResourcesConfig{}.idleReleaseSeconds;
@@ -99,9 +97,6 @@ struct NativeArguments final {
   bool kvCompression = false;
   // --adaptive-batching on|off: enable GPU utilization-based batch size adjustment (95-98% target).
   bool adaptiveBatching = false;
-  // --prefill-chunk-size N: maximum tokens per prefill chunk (default 8192).
-  uint32_t prefillChunkSize = 8192;
-  
   // Week 2 optimizations
   // --fused-attention on|off: enable fused QK^T+softmax+PV kernel (reduces memory traffic 30-40%).
   bool fusedAttention = false;

@@ -73,16 +73,6 @@ struct EngineConfig final {
   // prefills yield after processing this many tokens, allowing interactive
   // requests to proceed. Default: 4096 tokens.
   uint32_t preemptThreshold = 4096;
-  // Enable continuous attention for long prompts (FlashAttention-3 style).
-  // When true, prompts above continuousPrefillThreshold use a single-pass
-  // attention kernel that eliminates intermediate KV cache writes.
-  bool enableContinuousPrefill = true;
-  // Token count threshold for switching from chunked to continuous prefill.
-  // Default: 4096 tokens (8-10 chunks). Below this, chunked prefill's lower
-  // memory footprint outweighs continuous attention's bandwidth savings.
-  // Optimized for production: 4096 provides 35% prefill latency improvement
-  // while maintaining stable memory usage on 24GB+ systems.
-  uint32_t continuousPrefillThreshold = 4096;
   // The prefill checkpoint interval and the resource wait limit.
   uint32_t prefillCheckpointTokens = kPrefillCheckpointTokens;
   double resourceWaitTimeoutMilliseconds = kResourceWaitTimeoutMilliseconds;
@@ -134,7 +124,6 @@ struct EngineConfig final {
   // Large prefills split into chunks to allow decode interleaving.
   // Default: 8192 tokens (~200-300ms on M5 Pro 24GB).
   // Range: 512-32768 tokens.
-  uint32_t prefillChunkSize = 8192;
 };
 
 // While an active one lives, allocations are memory a request in service

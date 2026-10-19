@@ -26,8 +26,6 @@ namespace splash::test {
     config.growthPaused = [] { return false; };
   if (!config.serving)
     config.serving = [](bool) { return false; };
-  if (config.continuousPrefillThreshold > config.maxContext)
-    config.continuousPrefillThreshold = config.maxContext;
   return config;
 }
 

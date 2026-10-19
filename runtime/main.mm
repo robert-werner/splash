@@ -233,10 +233,8 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.nativeLoop.engine.targetGpuUtilization = arguments.targetGpuUtilization;
   config.nativeLoop.engine.priorityScheduling = arguments.priorityScheduling;
   config.nativeLoop.engine.preemptThreshold = arguments.preemptThreshold;
-  config.nativeLoop.engine.continuousPrefillThreshold = arguments.continuousAttentionThreshold;
   config.nativeLoop.engine.kvCompression = arguments.kvCompression;
   config.nativeLoop.engine.adaptiveBatching = arguments.adaptiveBatching;
-  config.nativeLoop.engine.prefillChunkSize = arguments.prefillChunkSize;
   return config;
 }
 
