@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 import os
+import fcntl
 import threading
 import queue
 from dataclasses import dataclass
@@ -157,15 +158,25 @@ class BinaryProtocolClient:
             return
         
         try:
+            # Set non-blocking mode
+            fd = self.process.stdout.fileno()
+            fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+            
             while not self.reader_stop.is_set():
-                # Blocking read (BufferedReader handles internally)
-                chunk = self.process.stdout.read(4096)
-                if not chunk:
-                    # EOF or process died
+                try:
+                    chunk = os.read(fd, 4096)
+                    if not chunk:
+                        # EOF
+                        break
+                    self.read_queue.put(chunk)
+                except BlockingIOError:
+                    # No data available, sleep briefly
+                    time.sleep(0.01)
+                except Exception:
+                    # Process likely died
                     break
-                self.read_queue.put(chunk)
         except Exception:
-            # Process likely died; queue will remain empty
             pass
     
     def _wait_for_ready(self, timeout: float = 30.0) -> ReadyEvent:
@@ -278,7 +289,18 @@ class BinaryProtocolClient:
         matched_prefix = 0
         progress_reports = []
         
+        start_time = time.time()
+        global_timeout = 120.0  # 2 minutes total timeout
+        
         while True:
+            # Check global timeout
+            elapsed = time.time() - start_time
+            if elapsed > global_timeout:
+                raise RuntimeError(
+                    f"Request {request_id} timed out after {elapsed:.1f}s "
+                    f"(generated {len(generated_tokens)} tokens, no DoneEvent received)"
+                )
+            
             # Check if process died
             if self.process.poll() is not None:
                 raise RuntimeError(f"Engine exited (code {self.process.returncode}) mid-request")
@@ -289,53 +311,59 @@ class BinaryProtocolClient:
             except queue.Empty:
                 continue
             
-            # Parse frames
-            step = self.parser.consume(chunk)
-            if step.issue:
-                raise RuntimeError(f"Protocol error: {step.issue.describe()}")
-            
-            if not step.frame:
-                continue
-            
-            event = decode_frame(step.frame)
-            
-            if isinstance(event, StartEvent):
-                if event.request_id == request_id:
-                    matched_prefix = event.matched_prompt_tokens
-                    print(f"Request {request_id} started on lane {event.lane}, "
-                          f"matched {matched_prefix} prefix tokens", file=sys.stderr)
-            
-            elif isinstance(event, PromptProgressEvent):
-                if event.request_id == request_id:
-                    progress_reports.append((event.processed_tokens, event.elapsed_micros))
-                    print(f"Prefill progress: {event.processed_tokens} tokens in "
-                          f"{event.elapsed_micros / 1_000_000:.3f}s", file=sys.stderr)
-            
-            elif isinstance(event, TokensEvent):
-                if event.request_id == request_id:
-                    generated_tokens.extend(event.tokens)
-                    print(f"Generated {len(event.tokens)} tokens", file=sys.stderr)
-            
-            elif isinstance(event, DoneEvent):
-                if event.request_id == request_id:
-                    stats = RequestStats(
-                        request_id=request_id,
-                        finish_reason=event.reason,
-                        prompt_tokens=event.prompt_tokens,
-                        completion_tokens=event.completion_tokens,
-                        prefill_micros=event.prefill_micros,
-                        decode_micros=event.decode_micros,
-                        wall_micros=event.wall_micros,
-                        generated_tokens=generated_tokens,
-                        matched_prefix_tokens=matched_prefix,
-                    )
-                    return stats
-            
-            elif isinstance(event, ErrorEvent):
-                if event.request_id == request_id:
-                    code = event.code.decode('utf-8', errors='replace')
-                    msg = event.message.decode('utf-8', errors='replace')
-                    raise RuntimeError(f"Request {request_id} error: {code}: {msg}")
+            # Parse frames (loop until all frames in chunk consumed)
+            remaining_chunk = chunk
+            while remaining_chunk:
+                step = self.parser.consume(remaining_chunk)
+                if step.issue:
+                    raise RuntimeError(f"Protocol error: {step.issue.describe()}")
+                
+                # Advance to unconsumed portion
+                remaining_chunk = remaining_chunk[step.consumed_bytes:]
+                
+                if not step.frame:
+                    # Need more data
+                    break
+                
+                event = decode_frame(step.frame)
+                
+                if isinstance(event, StartEvent):
+                    if event.request_id == request_id:
+                        matched_prefix = event.matched_prompt_tokens
+                        print(f"Request {request_id} started on lane {event.lane}, "
+                              f"matched {matched_prefix} prefix tokens", file=sys.stderr)
+                
+                elif isinstance(event, PromptProgressEvent):
+                    if event.request_id == request_id:
+                        progress_reports.append((event.processed_tokens, event.elapsed_micros))
+                        print(f"Prefill progress: {event.processed_tokens} tokens in "
+                              f"{event.elapsed_micros / 1_000_000:.3f}s", file=sys.stderr)
+                
+                elif isinstance(event, TokensEvent):
+                    if event.request_id == request_id:
+                        generated_tokens.extend(event.tokens)
+                        print(f"Generated {len(event.tokens)} tokens", file=sys.stderr)
+                
+                elif isinstance(event, DoneEvent):
+                    if event.request_id == request_id:
+                        stats = RequestStats(
+                            request_id=request_id,
+                            finish_reason=event.reason,
+                            prompt_tokens=event.prompt_tokens,
+                            completion_tokens=event.completion_tokens,
+                            prefill_micros=event.prefill_micros,
+                            decode_micros=event.decode_micros,
+                            wall_micros=event.wall_micros,
+                            generated_tokens=generated_tokens,
+                            matched_prefix_tokens=matched_prefix,
+                        )
+                        return stats
+                
+                elif isinstance(event, ErrorEvent):
+                    if event.request_id == request_id:
+                        code = event.code.decode('utf-8', errors='replace')
+                        msg = event.message.decode('utf-8', errors='replace')
+                        raise RuntimeError(f"Request {request_id} error: {code}: {msg}")
     
     def shutdown(self):
         """Shutdown the engine process."""
