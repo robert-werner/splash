@@ -102,30 +102,47 @@ CLI flags to be added:
 
 ### Testing Status 🧪
 **Date**: 2026-10-19  
-**Commit**: 52cf7a4d (main branch)
+**Commit**: 52cf7a4d (chunking implementation complete)
 
 #### Test Attempts:
-1. **serve-native mode test**: Failed with exit code 76, "protocol failure"
-   - Issue: serve-native expects binary protocol, not plain text prompt
-   - Generated 180K prompt (234,000 chars) successfully
-   - Test aborted after 10.4s (error time, not actual prefill)
 
-2. **HTTP server mode test**: Cannot execute
-   - Issue: `./build/splash serve` command not available
-   - Only `serve-native` command exists in current build
-   - Need Python HTTP server wrapper or different test approach
+1. **Binary protocol client test (30K tokens)**: Blocked by system memory constraints
+   - Engine crashes with SIGKILL (-9) during initialization
+   - macOS killing process due to memory pressure
+   - Issue: not enough available system memory to load model + runtime
+   - Error: "Engine exited without ReadyEvent" followed by exit code -9
 
-#### Blockers:
-- ❌ No HTTP server endpoint available for testing
-- ❌ serve-native protocol requires binary framing (not plain text stdin)
-- ❌ Python server requires dependencies (transformers module missing)
+2. **Binary protocol client test (180K tokens)**: Blocked by same memory issue
+   - Test infrastructure ready (binary_protocol_client.py delivered by sibling task)
+   - 180K test prompt ready (234,000 chars → ~180,000 tokens)
+   - Expected behavior: 22 chunks × 8,192 tokens
+   - Expected TTFT: ~19.5s (first chunk @ 420 tok/s)
+   - Cannot execute: engine initialization fails with SIGKILL
+
+#### Current Blockers:
+- ❌ **System memory constraints**: macOS killing engine process during startup
+  - Splash engine requires significant memory to load 27B model weights
+  - Current system memory insufficient for baseline engine operation
+  - Binary protocol test infrastructure ready but unusable
+  - Need system with more available RAM or lighter model for testing
+
+#### Test Infrastructure Status:
+- ✅ binary_protocol_client.py available (from sibling task #2)
+- ✅ 180K test prompt ready (prompt_180k.txt, 229KB)
+- ✅ Test scripts written:
+  - test_chunking_ttft_binary.py (180K full test)
+  - test_chunking_30k.py (smaller verification test)
+- ✅ Expected metrics calculated:
+  - Baseline: 870s TTFT @ 207 tok/s
+  - Target: 20s TTFT @ 420 tok/s (97.7% reduction)
+  - 22 chunks expected for 180K prompt
 
 #### Next Steps:
-- [ ] Use Python server wrapper (./splash) with proper venv setup
-- [ ] OR: Implement binary protocol framing for serve-native test
-- [ ] OR: Test via existing test infrastructure (if available)
-- [ ] Verify actual TTFT with 180K prompt
-- [ ] Measure total prefill time and throughput
+- [ ] Test on system with sufficient memory (>32GB available)
+- [ ] OR: Test with smaller model variant
+- [ ] OR: Verify chunking via engine logs in existing test runs
+- [ ] Measure actual TTFT with 180K prompt once hardware available
+- [ ] Verify throughput improvement (target: 207 → 420 tok/s)
 
 ### TODO 📋
 - [ ] Production testing and measurement with real 180K prompt
