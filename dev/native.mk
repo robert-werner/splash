@@ -20,6 +20,8 @@ SANITIZER_CONFIG_DIGEST := $(shell printf '%s\0' $(CONFIG_DIGEST) \
 # Control-plane tests compile the runtime sources they check: their sanitizer
 # builds cannot use the unsanitized engine library, and none links a framework.
 CACHE_SOURCES := \
+	runtime/engine/AsyncKvSwap.cpp \
+	runtime/ops/KvCompression.cpp \
 	runtime/engine/KvPool.cpp \
 	runtime/engine/KvCache.cpp \
 	runtime/engine/StateCache.cpp \
@@ -97,6 +99,7 @@ TEST_MEMORY_GOVERNOR_TEST := $(ENGINE_TEST_BUILD)/memory-governor
 TEST_QWEN_STATE_TEST := $(ENGINE_TEST_BUILD)/qwen-state-storage
 TEST_STATUS_TEST := $(ENGINE_TEST_BUILD)/runtime-status
 TEST_Q8_CPU_TEST := $(ENGINE_TEST_BUILD)/q8-paged-kv
+TEST_INT4_KV_TEST := $(ENGINE_TEST_BUILD)/int4-kv
 TEST_Q8_METAL_TEST := $(ENGINE_TEST_BUILD)/q8-paged-kv-metal
 TEST_Q8_STORAGE_TEST := $(ENGINE_TEST_BUILD)/q8-page-storage
 TEST_Q8_ATTENTION_TEST := $(ENGINE_TEST_BUILD)/q8-flash-attention
@@ -173,7 +176,8 @@ TEST_CPU_TARGETS := $(TEST_SLOT_FILE) $(TEST_CACHE_DIRECTORY) $(TEST_DISK_SPACE)
 	$(TEST_MEMORY_AUDIT_TEST) \
 	$(TEST_MEMORY_GOVERNOR_TEST) \
 	$(TEST_STATUS_TEST) \
-	$(TEST_Q8_CPU_TEST)
+	$(TEST_Q8_CPU_TEST) \
+	$(TEST_INT4_KV_TEST)
 
 TEST_METAL_TARGETS := $(TEST_DRAFT_PREPARATION) \
 	$(TEST_GGUF_PROJECTION) \
@@ -246,10 +250,11 @@ $(TEST_WEIGHT_SOURCE): dev/tests/engine/weight_source_test.cpp runtime/model/Wei
 $(TEST_GGUF_FILE): dev/tests/engine/gguf_file_test.cpp runtime/model/GgufFile.cpp \
 		runtime/model/WeightSource.cpp
 $(TEST_MEMORY_TEST):	runtime/metal/DeviceCapabilities.cpp \
-	runtime/metal/PipelineWarming.cpp \
 	runtime/engine/MemoryPlan.cpp \
 		dev/tests/engine/engine_memory_plan_test.cpp
-$(TEST_KV_PAGE_CACHE_TEST): runtime/engine/KvPool.cpp \
+$(TEST_KV_PAGE_CACHE_TEST): runtime/engine/AsyncKvSwap.cpp \
+		runtime/ops/KvCompression.cpp \
+		runtime/engine/KvPool.cpp \
 		runtime/engine/KvCache.cpp \
 		dev/tests/engine/kv_page_cache_test.cpp
 $(TEST_DRAFT_CONTEXT_PLAN_TEST): runtime/model/DraftContextPlan.cpp \
@@ -277,6 +282,7 @@ $(TEST_STATUS_TEST): runtime/metal/DeviceCapabilities.cpp \
 		runtime/engine/Status.cpp \
 		dev/tests/engine/runtime_status_test.cpp
 $(TEST_Q8_CPU_TEST): dev/tests/engine/q8_paged_kv_test.cc
+$(TEST_INT4_KV_TEST): dev/tests/engine/int4_kv_test.cpp $(ENGINE_LIBRARY)
 $(TEST_DISK_SPACE): runtime/engine/DiskSpace.cpp runtime/engine/CacheDirectory.cpp \
 		runtime/model/SlotFile.cpp dev/tests/engine/disk_space_test.cpp
 $(TEST_LEGACY_WEIGHT_CACHE): dev/tests/engine/legacy_weight_cache_test.cpp
@@ -311,7 +317,8 @@ $(TEST_VISION_METAL_TEST): dev/tests/engine/vision_metal_test.cpp \
 
 $(TEST_SAFETENSORS_CHECKPOINT) $(TEST_MODEL_CONFIGURATION) $(TEST_VISION_PREPARATION) \
 		$(TEST_NATIVE_ARGUMENTS_TEST) $(TEST_ANE_FFN_STARTUP) $(TEST_MODEL_LOADING_TEST) $(TEST_OPERATOR_WORKSPACE) \
-		$(TEST_EXECUTION_PLANS) $(TEST_MODEL_EXECUTION_PLANS) $(TEST_VISION_METAL_TEST): | $(ENGINE_TEST_BUILD)
+		$(TEST_EXECUTION_PLANS) $(TEST_MODEL_EXECUTION_PLANS) $(TEST_VISION_METAL_TEST) \
+		$(TEST_INT4_KV_TEST): | $(ENGINE_TEST_BUILD)
 	$(RUN_CONFIGURED) $(CXX) $(ENGINE_TEST_CXXFLAGS) $(TEST_INPUTS) \
 		$(ENGINE_LINKFLAGS) -o $@
 
@@ -501,6 +508,7 @@ test-engine-cpu: $(TEST_CPU_TARGETS) $(TEST_ATTENTION_SWEEP)
 	$(TEST_MEMORY_GOVERNOR_TEST)
 	$(TEST_STATUS_TEST) dev/tests/engine/status_golden.json
 	$(TEST_Q8_CPU_TEST)
+	$(TEST_INT4_KV_TEST)
 
 test-engine-metal: $(TEST_METAL_TARGETS)
 	$(METAL_TEST_ENV) $(BUILD_ID_PYTHON) dev/tests/engine/run_draft_preparation.py $(TEST_DRAFT_PREPARATION) $(LIB) \

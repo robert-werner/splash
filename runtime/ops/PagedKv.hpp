@@ -35,7 +35,10 @@ enum class Format : uint32_t { Int8 = 1, BFloat16 = 2, Int4 = 3 };
   case Format::BFloat16:
     return "bf16_k_token_major_v_dimension_major";
   case Format::Int4:
-    return "q4s4_f32_scale_per_token_head_k_token_major_v_dimension_major";
+    // Values are token-major in INT4 alone (kv_paging.h's
+    // splash_kv_value_index_of), so that the two elements a byte are one
+    // token's neighbours and one lane can own the byte.
+    return "q4s4_f32_scale_per_token_head_k_token_major_v_token_major";
   }
   return "invalid";
 }
@@ -119,8 +122,9 @@ namespace detail {
 
 } // namespace detail
 
-// Physical KV geometry: Page32, either BF16 or per-(token, head) symmetric INT8.
-// Layer and head counts vary by target.
+// Physical KV geometry: Page32, BF16, per-(token, head) symmetric INT8, or
+// symmetric INT4 at INT8's scale geometry with two elements a byte. Layer and
+// head counts vary by target.
 struct Layout final {
   uint32_t attentionLayers = 0;
   uint32_t kvHeads = 0;
