@@ -8,6 +8,9 @@ import struct
 import subprocess
 import sys
 import time
+import os
+import threading
+import queue
 from dataclasses import dataclass
 from typing import Optional
 
@@ -108,6 +111,11 @@ class BinaryProtocolClient:
         self.parser = FrameParser()
         self.ready_event: Optional[ReadyEvent] = None
         self.next_request_id = 1
+        
+        # Background reader thread to avoid select() deadlocks with BufferedReader
+        self.read_queue: queue.Queue[bytes] = queue.Queue()
+        self.reader_thread: Optional[threading.Thread] = None
+        self.reader_stop = threading.Event()
     
     def start(self) -> ReadyEvent:
         """Start the engine process and wait for ReadyEvent."""
@@ -127,8 +135,13 @@ class BinaryProtocolClient:
             cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=sys.stderr,  # Forward stderr directly to avoid blocking
         )
+        
+        # Start background reader thread
+        self.reader_stop.clear()
+        self.reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
+        self.reader_thread.start()
         
         # Wait for ReadyEvent
         self.ready_event = self._wait_for_ready()
@@ -138,18 +151,43 @@ class BinaryProtocolClient:
         
         return self.ready_event
     
+    def _reader_loop(self) -> None:
+        """Background thread: read stdout and push chunks to queue."""
+        if self.process is None or self.process.stdout is None:
+            return
+        
+        try:
+            while not self.reader_stop.is_set():
+                # Blocking read (BufferedReader handles internally)
+                chunk = self.process.stdout.read(4096)
+                if not chunk:
+                    # EOF or process died
+                    break
+                self.read_queue.put(chunk)
+        except Exception:
+            # Process likely died; queue will remain empty
+            pass
+    
     def _wait_for_ready(self, timeout: float = 30.0) -> ReadyEvent:
         """Wait for ReadyEvent from engine."""
+        if self.process is None:
+            raise RuntimeError("Engine process not started")
+        
         start = time.time()
         while True:
-            if time.time() - start > timeout:
+            remaining = timeout - (time.time() - start)
+            if remaining <= 0:
                 raise TimeoutError("Timed out waiting for ReadyEvent")
             
-            # Read from stdout with timeout
-            chunk = self.process.stdout.read(4096)
-            if not chunk:
-                stderr = self.process.stderr.read().decode('utf-8', errors='replace')
-                raise RuntimeError(f"Engine exited without ReadyEvent. stderr:\n{stderr}")
+            # Check if process died
+            if self.process.poll() is not None:
+                raise RuntimeError(f"Engine exited (code {self.process.returncode}) without ReadyEvent")
+            
+            # Read from queue with timeout
+            try:
+                chunk = self.read_queue.get(timeout=min(remaining, 1.0))
+            except queue.Empty:
+                continue
             
             # Parse frames
             step = self.parser.consume(chunk)
@@ -233,15 +271,23 @@ class BinaryProtocolClient:
         Returns:
             RequestStats with performance metrics and generated tokens
         """
+        if self.process is None:
+            raise RuntimeError("Engine process not started")
+        
         generated_tokens = []
         matched_prefix = 0
         progress_reports = []
         
         while True:
-            chunk = self.process.stdout.read(4096)
-            if not chunk:
-                stderr = self.process.stderr.read().decode('utf-8', errors='replace')
-                raise RuntimeError(f"Engine closed stdout. stderr:\n{stderr}")
+            # Check if process died
+            if self.process.poll() is not None:
+                raise RuntimeError(f"Engine exited (code {self.process.returncode}) mid-request")
+            
+            # Read from queue with timeout
+            try:
+                chunk = self.read_queue.get(timeout=10.0)
+            except queue.Empty:
+                continue
             
             # Parse frames
             step = self.parser.consume(chunk)
@@ -293,6 +339,11 @@ class BinaryProtocolClient:
     
     def shutdown(self):
         """Shutdown the engine process."""
+        # Stop reader thread
+        self.reader_stop.set()
+        if self.reader_thread:
+            self.reader_thread.join(timeout=2.0)
+        
         if self.process:
             self.process.stdin.close()
             self.process.wait(timeout=10)
