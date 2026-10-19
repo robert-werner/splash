@@ -149,7 +149,9 @@ ops::QuantizedSegment readQuantizedSegment(WeightFile &file, std::string_view la
     //   3. Separate GGUF files per format with merge logic
     // Current implementation loads the declared format only. Per-layer format
     // selection will be implemented when hybrid GGUF loading is available.
-    // See PHASE2_COMPLETION_REPORT.md for implementation options.
+    // See STATUS.md ("The Neural Engine: closed for the ternary model") for why
+    // none of those options can work for a rotated checkpoint. The retired
+    // analysis is in docs/archive/PHASE2_COMPLETION_REPORT.md.
     
     return ops::QuantizedSegment::planes(format, d.outputSize, d.inputSize, std::move(plane0),
                                          std::move(plane1), std::move(meta));
