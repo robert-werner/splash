@@ -112,7 +112,16 @@ CLI flags to be added:
    - Issue: not enough available system memory to load model + runtime
    - Error: "Engine exited without ReadyEvent" followed by exit code -9
 
-2. **Binary protocol client test (180K tokens)**: Blocked by same memory issue
+2. **100K token test (target scale)**: Test infrastructure prepared
+   - Test prompt: prompt_100k.txt (130,000 chars → ~100,000 tokens)
+   - Test script: test_chunking_100k.py (binary protocol)
+   - Expected behavior: 13 chunks × 8,192 tokens
+   - Expected TTFT: ~19.5s (first chunk @ 420 tok/s)
+   - Expected total prefill: ~238s (4.0 min)
+   - Baseline (no chunking): ~483s (8.1 min)
+   - Status: Cannot execute due to memory constraints
+
+3. **Binary protocol client test (180K tokens)**: Blocked by same memory issue
    - Test infrastructure ready (binary_protocol_client.py delivered by sibling task)
    - 180K test prompt ready (234,000 chars → ~180,000 tokens)
    - Expected behavior: 22 chunks × 8,192 tokens
@@ -128,14 +137,16 @@ CLI flags to be added:
 
 #### Test Infrastructure Status:
 - ✅ binary_protocol_client.py available (from sibling task #2)
-- ✅ 180K test prompt ready (prompt_180k.txt, 229KB)
+- ✅ Test prompts ready:
+  - prompt_100k.txt (130KB, ~100K tokens)
+  - prompt_180k.txt (229KB, ~180K tokens)
 - ✅ Test scripts written:
+  - test_chunking_100k.py (100K target scale test)
   - test_chunking_ttft_binary.py (180K full test)
   - test_chunking_30k.py (smaller verification test)
 - ✅ Expected metrics calculated:
-  - Baseline: 870s TTFT @ 207 tok/s
-  - Target: 20s TTFT @ 420 tok/s (97.7% reduction)
-  - 22 chunks expected for 180K prompt
+  - 100K: Baseline 483s → Target 19.5s TTFT (96% reduction), 13 chunks
+  - 180K: Baseline 870s → Target 20s TTFT (97.7% reduction), 22 chunks
 
 #### Next Steps:
 - [ ] Test on system with sufficient memory (>32GB available)
