@@ -98,13 +98,13 @@ def main():
         print(f"Generated {stats4.completion_tokens} tokens in {elapsed:.2f}s → {tok_s_large:.2f} tok/s")
 
         # Results
-        baseline = 62.9
+        baseline = 39.4  # tok/s, from STATUS.md §2.1 (163K context, int8 KV)
         print("\n" + "="*70)
         print("HYBRID DECODE THROUGHPUT RESULTS")
         print("="*70)
         print(f"Small context (13 tokens):       {tok_s_small:6.2f} tok/s")
         print(f"Large context ({len(prompt_large)} tokens):    {tok_s_large:6.2f} tok/s")
-        print(f"Baseline (Phase 2 target):       {baseline:6.2f} tok/s")
+        print(f"Baseline (STATUS.md §2.1):       {baseline:6.2f} tok/s")
         print(f"Small context delta:             {(tok_s_small / baseline - 1) * 100:+6.1f}%")
         print(f"Large context delta:             {(tok_s_large / baseline - 1) * 100:+6.1f}%")
         print("="*70)

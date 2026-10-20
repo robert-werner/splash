@@ -124,6 +124,12 @@ struct EngineConfig final {
   // Large prefills split into chunks to allow decode interleaving.
   // Default: 8192 tokens (~200-300ms on M5 Pro 24GB).
   // Range: 512-32768 tokens.
+  
+  // Draft temperature override (--draft-temperature). When > 0, overrides
+  // the per-request target temperature for draft speculation sampling.
+  // Range: (0.0, inf), typical: 0.6-1.0, default: 0 (disabled, use target temp).
+  // Lower values (0.6-0.8) increase acceptance rate but reduce draft diversity.
+  float draftTemperature = 0.0f;
 };
 
 // While an active one lives, allocations are memory a request in service

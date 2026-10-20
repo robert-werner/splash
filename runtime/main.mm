@@ -160,6 +160,7 @@ void printUsage(std::string_view executable) {
       " [--ane-share SHARE] [--ane-minimum-rows ROWS]"
       " [--ssd-kv on|off] [--ssd-kv-path DIRECTORY] [--hot-tier-tokens N]"
       " [--max-context-extended N] [--prefetch-pages N]"
+      " [--draft-temperature TEMP]"
       " [--relaunch-context TOKENS]");
   writeStderrLine("       " + command + " model-check mlx-affine none|safetensors CONFIG [DRAFT_CONFIG]");
   writeStderrLine("       " + command + " model-check gguf none|gguf CONFIG GGUF_METADATA [DRAFT_CONFIG]");
@@ -266,6 +267,7 @@ bootstrapConfig(const engine::NativeArguments &arguments) {
   config.nativeLoop.engine.hotTierTokens = arguments.hotTierTokens;
   config.nativeLoop.engine.maxContextExtended = arguments.maxContextExtended;
   config.nativeLoop.engine.prefetchPages = arguments.prefetchPages;
+  config.nativeLoop.engine.draftTemperature = arguments.draftTemperature;
   return config;
 }
 

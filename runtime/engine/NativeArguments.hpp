@@ -112,6 +112,9 @@ struct NativeArguments final {
   bool persistentAneCalibration = true;
   // --speculation-threshold N: draft acceptance threshold for adaptive depth (0.15-0.30, default 0.25).
   float speculationThreshold = 0.25f;
+  // --draft-temperature T: override draft sampling temperature (0.0 = disabled, use target temp).
+  // Range: (0.0, inf), typical: 0.6-1.0. Lower values increase acceptance rate.
+  float draftTemperature = 0.0f;
   
   // Phase 2: ANE Hybrid Quantization
   // --ane-layers "0,2,4,8,10,14": comma-separated FFN layer indices for ANE (Q4_K unrotated).

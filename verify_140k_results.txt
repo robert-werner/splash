@@ -1,0 +1,156 @@
+======================================================================
+140K CONTEXT VERIFICATION TEST
+======================================================================
+
+✓ Prerequisites ready
+
+Generating 135,000 token prompt...
+✓ Generated 135,000 tokens
+
+Starting engine (context=140,000)...
+Command: ./build/splash serve-native install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6 140000 auto
+         --kv-format int8 --ane off --idle-release off
+
+Waiting for engine to initialize...
+Starting engine: ./build/splash serve-native install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6 140000 auto --kv-format int8 --ane off --idle-release off
+[DEBUG RuntimeBootstrap::start] ENTERED
+06:51:52 Weights loaded in 4.02 s.
+06:51:52 Kernel policy for GPU family 10 with 16 cores.
+06:51:52 The GPU runs the prefill FFN alone, as given.
+06:51:52 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 1040 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+06:51:52 Pipeline warming: compiled 6 critical pipelines in 0.013 s
+[DEBUG Bootstrap] requireWarmupAndAnnounce ENTERED
+[DEBUG Bootstrap] About to call announceReady()
+[DEBUG announceReady] CALLED
+[DEBUG announceReady] About to send ReadyEvent
+[DEBUG writeAll] Writing 25 bytes to fd 1
+[DEBUG writeAll] Wrote 25 bytes, offset now 25/25
+[DEBUG writeAll] Completed 25 bytes
+[DEBUG announceReady] ReadyEvent sent successfully
+[DEBUG Bootstrap] announceReady() completed
+Engine ready: max_context=140000, max_concurrent=4, vision=True
+
+✓ Engine ready
+  Initialization: 11.5s
+  Max context: 140,000 tokens
+  Max concurrent: 4
+
+======================================================================
+PREFILL TEST
+======================================================================
+
+Sending request:
+  Prompt tokens: 135,000
+  Max output: 10
+
+Request ID: 1
+
+Processing (this will take several minutes)...
+
+[DEBUG writeAll] Writing 32 bytes to fd 1
+[DEBUG writeAll] Wrote 32 bytes, offset now 32/32
+[DEBUG writeAll] Completed 32 bytes
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Request 1 started on lane 0, matched 0 prefix tokens
+Prefill progress: 0 tokens in 0.000s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 2048 tokens in 5.624s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+06:52:10 Memory: growth paused; waiting=0; suspended=0
+Prefill progress: 4096 tokens in 11.131s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 6144 tokens in 16.609s
+06:52:16 Memory: growth available; resource wait cleared
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 8192 tokens in 22.171s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 10240 tokens in 28.120s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 12288 tokens in 34.867s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 14336 tokens in 41.751s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+06:52:48 Memory: growth paused; waiting=0; suspended=0
+Prefill progress: 16384 tokens in 48.853s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+06:52:55 Memory: growth available; resource wait cleared
+Prefill progress: 18432 tokens in 55.974s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 20480 tokens in 63.223s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+06:53:10 Memory: growth paused; waiting=0; suspended=0
+Prefill progress: 22528 tokens in 70.623s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+06:53:17 Memory: growth available; resource wait cleared
+Prefill progress: 24576 tokens in 77.989s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 26624 tokens in 85.408s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 28672 tokens in 93.145s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 30720 tokens in 100.858s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 32768 tokens in 108.217s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+06:53:54 Thermal state: nominal → fair
+Prefill progress: 34816 tokens in 115.285s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+06:54:02 Memory: growth paused; waiting=0; suspended=0
+Prefill progress: 36864 tokens in 122.615s
+
+======================================================================
+❌ TEST FAILED
+======================================================================
+
+Error: Request 1 timed out after 122.6s (generated 0 tokens, no DoneEvent received)
+
+Traceback (most recent call last):
+  File "/Users/a1111/development/splash_of_mine/verify_140k_context.py", line 128, in main
+    stats = client.receive_events(request_id)
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 300, in receive_events
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: Request 1 timed out after 122.6s (generated 0 tokens, no DoneEvent received)
+
+Shutting down engine...
+Engine exited with code 0
+Done.

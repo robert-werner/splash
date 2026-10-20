@@ -1,0 +1,223 @@
+============================================================
+TTFT Measurement - 100K Token Prefill Chunking Study
+============================================================
+Assembly: install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6
+Target tokens: 100000
+Chunk sizes: ['8K', '16K', '32K', 'None']
+
+
+============================================================
+Testing: 8K chunks (100000 tokens)
+============================================================
+Starting engine: ./build/splash serve-native install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6 180000 auto --kv-format int8 --ane off --idle-release off
+[DEBUG RuntimeBootstrap::start] ENTERED
+06:51:52 Waiting for sufficient available memory to start; the macOS reserve remains protected...
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+error: runtime bootstrap failed [resource_assembly/model_loading]: not enough free memory to start: 1797 MiB reclaimable, 2048 MiB protected for macOS, system pressure warning; close memory-heavy applications and retry
+✗ Test failed with exception: Engine exited (code 70) without ReadyEvent
+Traceback (most recent call last):
+  File "/Users/a1111/development/splash_of_mine/measure_chunking_ttft.py", line 203, in run_test_scenario
+    ready_event = client.start()
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 149, in start
+    self.ready_event = self._wait_for_ready()
+                       ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 196, in _wait_for_ready
+    raise RuntimeError(f"Engine exited (code {self.process.returncode}) without ReadyEvent")
+RuntimeError: Engine exited (code 70) without ReadyEvent
+Engine exited with code 70
+
+============================================================
+Testing: 16K chunks (100000 tokens)
+============================================================
+Starting engine: ./build/splash serve-native install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6 180000 auto --kv-format int8 --ane off --idle-release off
+[DEBUG RuntimeBootstrap::start] ENTERED
+06:52:32 Waiting for sufficient available memory to start; the macOS reserve remains protected...
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+error: runtime bootstrap failed [resource_assembly/model_loading]: not enough free memory to start: 1959 MiB reclaimable, 2048 MiB protected for macOS, system pressure normal; close memory-heavy applications and retry
+✗ Test failed with exception: Engine exited (code 70) without ReadyEvent
+Traceback (most recent call last):
+  File "/Users/a1111/development/splash_of_mine/measure_chunking_ttft.py", line 203, in run_test_scenario
+    ready_event = client.start()
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 149, in start
+    self.ready_event = self._wait_for_ready()
+                       ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 196, in _wait_for_ready
+    raise RuntimeError(f"Engine exited (code {self.process.returncode}) without ReadyEvent")
+RuntimeError: Engine exited (code 70) without ReadyEvent
+Engine exited with code 70
+
+============================================================
+Testing: 32K chunks (100000 tokens)
+============================================================
+Starting engine: ./build/splash serve-native install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6 180000 auto --kv-format int8 --ane off --idle-release off
+[DEBUG RuntimeBootstrap::start] ENTERED
+06:53:11 Waiting for sufficient available memory to start; the macOS reserve remains protected...
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+error: runtime bootstrap failed [resource_assembly/model_loading]: not enough free memory to start: 2033 MiB reclaimable, 2048 MiB protected for macOS, system pressure normal; close memory-heavy applications and retry
+✗ Test failed with exception: Engine exited (code 70) without ReadyEvent
+Traceback (most recent call last):
+  File "/Users/a1111/development/splash_of_mine/measure_chunking_ttft.py", line 203, in run_test_scenario
+    ready_event = client.start()
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 149, in start
+    self.ready_event = self._wait_for_ready()
+                       ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 196, in _wait_for_ready
+    raise RuntimeError(f"Engine exited (code {self.process.returncode}) without ReadyEvent")
+RuntimeError: Engine exited (code 70) without ReadyEvent
+Engine exited with code 70
+
+============================================================
+Testing: Monolithic (100000 tokens)
+============================================================
+Starting engine: ./build/splash serve-native install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6 180000 auto --kv-format int8 --ane off --idle-release off
+[DEBUG RuntimeBootstrap::start] ENTERED
+06:53:50 Waiting for sufficient available memory to start; the macOS reserve remains protected...
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+[DEBUG RuntimeBootstrap::start] ENTERED
+06:54:13 Weights loaded in 3.23 s.
+06:54:13 Kernel policy for GPU family 10 with 16 cores.
+06:54:13 The GPU runs the prefill FFN alone, as given.
+06:54:13 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 1040 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+06:54:13 Pipeline warming: compiled 6 critical pipelines in 0.002 s
+[DEBUG Bootstrap] requireWarmupAndAnnounce ENTERED
+[DEBUG Bootstrap] About to call announceReady()
+[DEBUG announceReady] CALLED
+[DEBUG announceReady] About to send ReadyEvent
+[DEBUG writeAll] Writing 25 bytes to fd 1
+[DEBUG writeAll] Wrote 25 bytes, offset now 25/25
+[DEBUG writeAll] Completed 25 bytes
+[DEBUG announceReady] ReadyEvent sent successfully
+[DEBUG Bootstrap] announceReady() completed
+06:54:20 Thermal state: fair
+Engine ready: max_context=180000, max_concurrent=4, vision=True
+Engine ready: max_context=180000
+  Sending monolithic 100000 token prefill...
+[DEBUG writeAll] Writing 32 bytes to fd 1
+[DEBUG writeAll] Wrote 32 bytes, offset now 32/32
+[DEBUG writeAll] Completed 32 bytes
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Request 1 started on lane 0, matched 0 prefix tokens
+Prefill progress: 0 tokens in 0.000s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 2048 tokens in 4.933s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 4096 tokens in 10.040s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 6144 tokens in 15.190s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 8192 tokens in 20.498s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 10240 tokens in 25.895s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 12288 tokens in 31.503s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 14336 tokens in 37.228s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 16384 tokens in 43.081s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 18432 tokens in 49.043s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 20480 tokens in 55.176s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 22528 tokens in 61.421s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 24576 tokens in 67.765s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 26624 tokens in 74.240s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 28672 tokens in 80.865s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 30720 tokens in 87.708s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 32768 tokens in 94.846s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 34816 tokens in 102.334s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 36864 tokens in 109.708s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 38912 tokens in 117.144s
+[DEBUG writeAll] Writing 36 bytes to fd 1
+[DEBUG writeAll] Wrote 36 bytes, offset now 36/36
+[DEBUG writeAll] Completed 36 bytes
+Prefill progress: 40960 tokens in 124.851s
+  ERROR: Request 1 timed out after 124.9s (generated 0 tokens, no DoneEvent received)
+Traceback (most recent call last):
+  File "/Users/a1111/development/splash_of_mine/measure_chunking_ttft.py", line 155, in measure_monolithic_ttft
+    stats = client.receive_events(request_id)
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 300, in receive_events
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: Request 1 timed out after 124.9s (generated 0 tokens, no DoneEvent received)
+✗ Test failed
+Engine exited with code 0
+
+============================================================
+SUMMARY
+============================================================
+Scenario             Chunk Size   TTFT (s)   Status
+------------------------------------------------------------
+8K chunks            8K           FAILED     ✗
+16K chunks           16K          FAILED     ✗
+32K chunks           32K          FAILED     ✗
+Monolithic           N/A          FAILED     ✗
+
+Results saved to: chunking_ttft_results.json

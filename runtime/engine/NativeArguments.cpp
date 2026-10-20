@@ -275,6 +275,11 @@ NativeArguments parseNativeArguments(int argc, const char *const *argv) {
       if (!parseFinite(value, threshold) || threshold < 0.1 || threshold > 0.5)
         throw UsageError("--speculation-threshold requires a number in [0.1, 0.5]");
       result.speculationThreshold = static_cast<float>(threshold);
+    } else if (option == "--draft-temperature") {
+      double temp = 0.0;
+      if (!parseFinite(value, temp) || temp < 0.0)
+        throw UsageError("--draft-temperature requires a non-negative number (0.0 = disabled)");
+      result.draftTemperature = static_cast<float>(temp);
     } else if (option == "--ane-layers") {
       if (value.empty())
         throw UsageError("--ane-layers requires comma-separated layer indices");
