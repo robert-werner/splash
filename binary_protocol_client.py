@@ -10,6 +10,7 @@ import sys
 import time
 import os
 import fcntl
+import select
 import threading
 import queue
 from dataclasses import dataclass
@@ -158,28 +159,28 @@ class BinaryProtocolClient:
             return
         
         try:
-            # Set non-blocking mode
+            # Use blocking mode with select() for reliable reads
             fd = self.process.stdout.fileno()
-            fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-            fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
             
             while not self.reader_stop.is_set():
+                # Wait for data with 0.1s timeout
+                ready, _, _ = select.select([fd], [], [], 0.1)
+                if not ready:
+                    continue
+                
                 try:
                     chunk = os.read(fd, 4096)
                     if not chunk:
                         # EOF
                         break
                     self.read_queue.put(chunk)
-                except BlockingIOError:
-                    # No data available, sleep briefly
-                    time.sleep(0.01)
                 except Exception:
                     # Process likely died
                     break
         except Exception:
             pass
     
-    def _wait_for_ready(self, timeout: float = 30.0) -> ReadyEvent:
+    def _wait_for_ready(self, timeout: float = 120.0) -> ReadyEvent:
         """Wait for ReadyEvent from engine."""
         if self.process is None:
             raise RuntimeError("Engine process not started")
