@@ -76,10 +76,19 @@ struct EngineMemoryPolicy {
 
   [[nodiscard]] static constexpr uint64_t
   hardBudgetBytes(uint64_t recommendedWorkingSetBytes,
-                  uint64_t maximumMemoryBytes) noexcept {
+                  uint64_t maximumMemoryBytes,
+                  uint64_t physicalMemoryBytes) noexcept {
     const uint64_t margin = workingSetMarginBytes(recommendedWorkingSetBytes);
-    const uint64_t automatic = recommendedWorkingSetBytes > margin
-                                   ? recommendedWorkingSetBytes - margin
+    // Adaptive strategy: use 90% of physical memory when safe, but respect
+    // Metal's recommendation when it suggests using even more (rare), and
+    // respect the safety margin (never allocate when recommended < margin).
+    const uint64_t conservativeBudget = recommendedWorkingSetBytes > margin
+                                            ? recommendedWorkingSetBytes - margin
+                                            : 0;
+    // Only use physical budget if the conservative budget is viable.
+    const uint64_t automatic = conservativeBudget > 0
+                                   ? std::max(physicalMemoryBytes * 9 / 10,
+                                              conservativeBudget)
                                    : 0;
     return maximumMemoryBytes && maximumMemoryBytes < automatic
                ? maximumMemoryBytes

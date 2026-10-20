@@ -427,7 +427,8 @@ RuntimeResources::create(const RuntimeResourcesConfig &config,
                    ? config.maximumMemoryBytes
                    : config.workingSetBytes)
             : EngineMemoryPolicy::hardBudgetBytes(
-                  device.recommendedMaxWorkingSetBytes, config.maximumMemoryBytes);
+                  device.recommendedMaxWorkingSetBytes, config.maximumMemoryBytes,
+                  device.physicalMemoryBytes);
     // Reject a model that cannot fit before loading its weights. Beside
     // them the plan needs at least the runtime reserves, one lane's state,
     // the KV runway and any disk tier state staging; the full plan below adds

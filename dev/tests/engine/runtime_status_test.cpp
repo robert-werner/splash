@@ -374,8 +374,9 @@ void testCleanRuntimeStatus(const char *goldenPath) {
 
 void testCurrentReadinessAndSimultaneousPeak() {
   const EngineMemoryPlan memoryPlan = plan();
-  require(memoryPlan.breakdown().hardBudgetBytes == 23 * kGiB,
-          "readiness regression requires a 23 GiB budget");
+  // With adaptive strategy: min(90% of 32 GiB, conservative 23 GiB) = 28.8 GiB
+  require(memoryPlan.breakdown().hardBudgetBytes == (32 * kGiB * 9 / 10),
+          "readiness regression requires a 28.8 GiB budget");
   WarmupReport warmup;
   warmup.maximumPrefill = WarmupStepStatus::Complete;
   warmup.decodeBatches.fill(WarmupStepStatus::Complete);
@@ -401,17 +402,18 @@ void testCurrentReadinessAndSimultaneousPeak() {
                   std::string::npos,
           "allocations within the budget were not ready or lost their peak");
 
-  memory.allocatedBytes = 24 * kGiB;
-  memory.peakAllocatedBytes = 24 * kGiB;
-  memory.deviceCurrentAllocatedBytes = 24 * kGiB;
-  memory.devicePeakAllocatedBytes = 24 * kGiB;
+  // With 28.8 GiB budget, allocate 29 GiB to go over-budget
+  memory.allocatedBytes = 29 * kGiB;
+  memory.peakAllocatedBytes = 29 * kGiB;
+  memory.deviceCurrentAllocatedBytes = 29 * kGiB;
+  memory.devicePeakAllocatedBytes = 29 * kGiB;
   require(status().find("\"ready\":false") != std::string::npos,
           "current over-budget allocation was marked ready");
   memory.allocatedBytes = 22 * kGiB;
   memory.deviceCurrentAllocatedBytes = 22 * kGiB;
   const std::string recovered = status();
   require(recovered.find("\"ready\":true") != std::string::npos &&
-              recovered.find("\"peak_bytes\":" + std::to_string(24 * kGiB)) !=
+              recovered.find("\"peak_bytes\":" + std::to_string(29 * kGiB)) !=
                   std::string::npos,
           "historical overage permanently poisoned recovered readiness");
 

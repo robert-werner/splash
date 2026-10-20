@@ -175,12 +175,15 @@ void testUserCeilingAndFailure() {
 // plan sets aside beside the weights, so one lone request still reaches the
 // advertised context.
 void testDiskTierStateStagingIsBudgeted() {
-  const EngineMemoryPlan without = test::requireMemoryPlan(device(), model());
+  // Use a smaller device to keep the budget tight enough that staging matters.
+  DeviceCapabilities smallDevice = device(12 * kGiB);
+  smallDevice.physicalMemoryBytes = 13 * kGiB; // 90% = 11.7 GiB, tight!
+  const EngineMemoryPlan without = test::requireMemoryPlan(smallDevice, model());
   ModelMemoryProfile tiered = model();
   // One Qwen3.8-27B state (DEVELOPMENT.md, SSD cache).
   const uint64_t staging = 187 * kMiB;
   tiered.footprint.stateStagingBytes = staging;
-  const EngineMemoryPlan with = test::requireMemoryPlan(device(), tiered);
+  const EngineMemoryPlan with = test::requireMemoryPlan(smallDevice, tiered);
   const auto &budget = with.breakdown();
   require(without.breakdown().fixedRuntimeBytes + staging +
                   budget.laneStateBytes + budget.kvCapacityBytes <=
@@ -254,17 +257,19 @@ void testReservesAreTheModelConstants() {
 }
 
 void testHardBudgetBoundaries() {
-  require(EngineMemoryPolicy::hardBudgetBytes(12 * kGiB, 0) == 11 * kGiB &&
-              EngineMemoryPolicy::hardBudgetBytes(12 * kGiB, 8 * kGiB) ==
+  constexpr uint64_t physical = 24 * kGiB;
+  constexpr uint64_t physical90Percent = (24 * kGiB * 9) / 10; // 21.6 GiB
+  require(EngineMemoryPolicy::hardBudgetBytes(12 * kGiB, 0, physical) == physical90Percent &&
+              EngineMemoryPolicy::hardBudgetBytes(12 * kGiB, 8 * kGiB, physical) ==
                   8 * kGiB &&
-              EngineMemoryPolicy::hardBudgetBytes(12 * kGiB, 16 * kGiB) ==
-                  11 * kGiB,
+              EngineMemoryPolicy::hardBudgetBytes(12 * kGiB, 16 * kGiB, physical) ==
+                  16 * kGiB,
           "preflight ceiling disagrees with automatic or explicit policy");
-  require(EngineMemoryPolicy::hardBudgetBytes(0, 0) == 0 &&
-              EngineMemoryPolicy::hardBudgetBytes(kGiB, 1) == 0,
+  require(EngineMemoryPolicy::hardBudgetBytes(0, 0, physical) == 0 &&
+              EngineMemoryPolicy::hardBudgetBytes(kGiB, 1, physical) == 0,
           "insufficient working set underflowed the preflight ceiling");
   constexpr uint64_t maximum = std::numeric_limits<uint64_t>::max();
-  require(EngineMemoryPolicy::hardBudgetBytes(maximum, maximum) ==
+  require(EngineMemoryPolicy::hardBudgetBytes(maximum, maximum, physical) ==
               maximum - EngineMemoryPolicy::workingSetMarginBytes(maximum),
           "maximum working set overflowed the preflight ceiling");
 }
