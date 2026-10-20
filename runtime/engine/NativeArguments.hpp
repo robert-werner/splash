@@ -75,7 +75,9 @@ struct NativeArguments final {
   // Memory switches the parser read.
   bool lazyAneAllocation = false;
   bool kvDefragmentation = false;
-  bool visionTextOnly = false;
+  // Auto-skip vision tower by default to save ~1GB memory for text-only workloads.
+  // Pass --vision-text-only off to force loading vision tower.
+  bool visionTextOnly = true;
   // --recalibrate-ane: forget saved ANE calibration and recalibrate.
   bool recalibrateAne = false;
   // --lazy-draft-loading: defer draft model load until first request.

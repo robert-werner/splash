@@ -152,7 +152,9 @@ struct RuntimeResourcesConfig {
   // The memory switches the command line asked for.
   bool lazyAneAllocation = false;
   bool kvDefragmentation = false;
-  bool visionTextOnly = false;
+  // Auto-skip vision tower by default to save ~1GB memory for text-only workloads.
+  // Pass --vision-text-only off to force loading vision tower.
+  bool visionTextOnly = true;
   bool recalibrateAne = false;
   bool lazyDraftLoading = false;
   
