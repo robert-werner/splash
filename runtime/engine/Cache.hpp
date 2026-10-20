@@ -109,6 +109,8 @@ struct KvTierSnapshot final {
   uint32_t pendingPages = 0;
   uint32_t diskBlocks = 0;
   uint64_t diskBytes = 0;
+  // Proactive SSD evictions triggered by hot-tier overflow
+  uint64_t ssdEvictions = 0;
 };
 
 // What a start took back from a persistent tier: the states and KV blocks
@@ -707,6 +709,9 @@ private:
   // writes stays where it is until the transfer has landed. False when the
   // free pages cover no extent.
   [[nodiscard]] bool compactExtent();
+  // Proactively evicts LRU pages to SSD when hot tier exceeds hotTierTokens_.
+  // Returns the number of pages evicted.
+  uint32_t evictToSsd();
 
   KvPool &pool_;
   KvTier *tier_;
@@ -735,6 +740,8 @@ private:
   double extentCompactMaxMilliseconds_ = 0.0;
   std::function<void()> completionNotifier_;
   std::optional<DefragmentationPolicy> defragmentation_;
+  uint32_t hotTierTokens_ = 0;
+  uint64_t ssdEvictions_ = 0;
 };
 
 } // namespace splash::engine

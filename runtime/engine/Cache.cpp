@@ -37,7 +37,8 @@ Cache::Cache(KvPool &pool, KvTier *kvTier, std::shared_ptr<model::DiskBudget> di
     : pool_(pool), tier_(kvTier), persistent_(kvTier && kvTier->persistent()),
       diskBudget_(std::move(diskBudget)), kv_(pool, recency_),
       states_(kv_, recency_, [this](bool inUse) { return freeDiskSpace(inUse); }, persistent_),
-      defragmentation_(config.kvDefragmentation ? std::make_optional<DefragmentationPolicy>() : std::nullopt) {}
+      defragmentation_(config.kvDefragmentation ? std::make_optional<DefragmentationPolicy>() : std::nullopt),
+      hotTierTokens_(config.hotTierTokens) {}
 
 CacheDefragmentation Cache::defragmentIfNeeded() {
   // A compaction pass only pays off once free pages are stranded across
@@ -1001,6 +1002,9 @@ bool Cache::pollTransfers() {
   // then counts no failed write.
   if (diskMeasure_ && diskBudget_->fullReported())
     keepDiskLimit();
+  // Proactive SSD eviction when hot tier is full
+  if (tier_ && hotTierTokens_)
+    evictToSsd();
   return progressed;
 }
 
@@ -1171,6 +1175,7 @@ CacheSnapshot Cache::snapshot() const {
   KvTierSnapshot tier = kvTier_;
   tier.pendingPages = pendingPages();
   tier.diskBlocks = kv_.diskBlocks();
+  tier.ssdEvictions = ssdEvictions_;
   if (diskBudget_) {
     tier.capacityBytes = diskBudget_->capacityBytes();
     tier.limitBytes = diskBudget_->limitBytes();
@@ -1209,6 +1214,47 @@ const Cache::Request &Cache::request(uint64_t requestId) const {
   if (found == requests_.end())
     throw std::out_of_range("unknown request");
   return found->second;
+}
+
+uint32_t Cache::evictToSsd() {
+  if (!tier_ || !hotTierTokens_)
+    return 0;
+  
+  // Count resident KV pages
+  uint32_t residentPages = 0;
+  uint64_t blockId = 0;
+  while (auto candidate = kv_.evictionCandidate(blockId)) {
+    blockId = candidate->id;
+    if (kv_.page(blockId) != KvCache::noPage)
+      ++residentPages;
+  }
+  
+  const uint32_t totalTokens = residentPages * KvCache::pageTokens;
+  if (totalTokens <= hotTierTokens_)
+    return 0;
+  
+  const uint32_t excess = totalTokens - hotTierTokens_;
+  const uint32_t targetPages = (excess + KvCache::pageTokens - 1) / KvCache::pageTokens;
+  uint32_t evicted = 0;
+  
+  for (uint32_t i = 0; i < targetPages && evicted < targetPages; ++i) {
+    auto candidate = kv_.evictionCandidate(0);
+    if (!candidate)
+      break;
+    
+    if (kvNeededByState(candidate->id)) {
+      const LeafReclaim result = demoteKv(candidate->id);
+      if (result == LeafReclaim::Started) {
+        ++evicted;
+        ++ssdEvictions_;
+        ++kvTier_.demotions;
+      } else if (result == LeafReclaim::Pending) {
+        break;
+      }
+    }
+  }
+  
+  return evicted;
 }
 
 } // namespace splash::engine
