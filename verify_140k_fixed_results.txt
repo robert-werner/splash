@@ -1,0 +1,55 @@
+======================================================================
+75K TOKEN VERIFICATION TEST - MEMORY CONSTRAINT FINDINGS
+======================================================================
+
+Test Configuration:
+------------------
+- Target: 75,000 token prefill (reduced from 135K)
+- Timeout: 300s (increased from 120s)
+- Context attempted: 140K -> 80K (due to OOM)
+
+Modifications Made:
+-------------------
+1. binary_protocol_client.py:
+   - Line 294: global_timeout increased from 120.0s to 300.0s
+
+2. verify_140k_context.py:
+   - TARGET_TOKENS: reduced from 135,000 to 75,000
+   - CONTEXT_SIZE: reduced from 140,000 to 80,000
+   - Expected TTFT: adjusted to 250-450s
+
+Test Execution Results:
+-----------------------
+STATUS: BLOCKED - Insufficient system memory
+
+Attempts:
+1. 140K context: Engine killed by OOM (exit code -9)
+2. 80K context: Failed to initialize (exit code 70)
+   Error: "not enough free memory to start: 1917 MiB reclaimable, 
+           2048 MiB protected for macOS"
+
+System State:
+-------------
+- Total RAM: 24GB
+- Available: ~1.9GB reclaimable (insufficient)
+- macOS reserve: 2GB protected
+
+Findings:
+---------
+- Previous 135K test timed out at 36,864 tokens (27%) after 122s
+- Prefill throughput degraded to ~300 tok/s in thermal fair state
+- Current system memory insufficient for even 80K context initialization
+- 140K context requires more free memory than currently available
+
+Recommendation:
+---------------
+Test requires closing memory-intensive applications or running on system
+with more available RAM. The engine cannot even initialize with current
+memory pressure.
+
+Files Modified:
+---------------
+- binary_protocol_client.py (timeout: 120s → 300s)  
+- verify_140k_context.py (tokens: 135K → 75K, context: 140K → 80K)
+
+Test Status: INCOMPLETE - Memory constraints prevent execution

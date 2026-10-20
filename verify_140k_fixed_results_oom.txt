@@ -1,0 +1,40 @@
+======================================================================
+140K CONTEXT VERIFICATION TEST
+======================================================================
+
+✓ Prerequisites ready
+
+Generating 75,000 token prompt...
+✓ Generated 75,000 tokens
+
+Starting engine (context=140,000)...
+Command: ./build/splash serve-native install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6 140000 auto
+         --kv-format int8 --ane off --idle-release off
+
+Waiting for engine to initialize...
+Starting engine: ./build/splash serve-native install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6 140000 auto --kv-format int8 --ane off --idle-release off
+07:15:14 Weights loaded in 3.11 s.
+07:15:14 Kernel policy for GPU family 10 with 16 cores.
+07:15:14 The GPU runs the prefill FFN alone, as given.
+07:15:14 SSD cache: up to 32.0 GiB of temporary files in /var/folders/tl/4th9rklx4msglcbc1cygttcw0000gn/T/ (its automatic quota, while its volume has room beyond the 10.0 GiB it keeps free); KV pages of 1040 KiB and states of 152 MiB, a state's write staging through 152 MiB of the memory plan; --max-cache-disk 0 turns it off.
+07:15:14 Pipeline warming: compiled 6 critical pipelines in 0.002 s
+
+======================================================================
+❌ TEST FAILED
+======================================================================
+
+Error: Engine exited (code -9) without ReadyEvent
+
+Traceback (most recent call last):
+  File "/Users/a1111/development/splash_of_mine/verify_140k_context.py", line 88, in main
+    ready_event = client.start()
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 149, in start
+    self.ready_event = self._wait_for_ready()
+                       ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/a1111/development/splash_of_mine/binary_protocol_client.py", line 196, in _wait_for_ready
+    raise RuntimeError(f"Engine exited (code {self.process.returncode}) without ReadyEvent")
+RuntimeError: Engine exited (code -9) without ReadyEvent
+
+Shutting down engine...
+Engine exited with code -9
+Done.

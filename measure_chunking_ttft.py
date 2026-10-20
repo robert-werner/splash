@@ -29,7 +29,7 @@ from binary_protocol_client import BinaryProtocolClient
 ASSEMBLY_PATH = "install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6"
 SERVER_BINARY = "./build/splash"
 CONTEXT_SIZE = 180000
-TARGET_TOKENS = 100000  # 100K tokens for prefill
+TARGET_TOKENS = 75000  # 75K tokens for prefill (reduced from 100K due to memory constraints)
 
 # Chunk sizes to test (in tokens)
 CHUNK_SIZES = [8192, 16384, 32768, None]  # None = no chunking
@@ -84,10 +84,10 @@ def measure_chunked_ttft(
             
             print(f"  Chunk {i+1}/{num_chunks}: tokens {chunk_start}-{chunk_end} ({len(chunk_tokens)} tokens)")
             
-            # For all chunks except the last, we only prefill (max_output_tokens=0)
-            # For the last chunk, request 1 generation token
+            # All chunks request 1 generation token
+            # (protocol doesn't support max_output_tokens=0)
             is_last = (i == num_chunks - 1)
-            max_output = 1 if is_last else 0
+            max_output = 1
             
             request_id = client.send_request(
                 prompt_tokens=chunk_tokens,

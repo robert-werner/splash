@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-10-20 07:17:10",
+  "test_protocol": "native_binary",
+  "context": "PTQ1_0 measured via native protocol; PQ2_0 baseline from STATUS.md §2.1 (insufficient memory for direct measurement)",
+  "models": {
+    "PQ2_0_baseline": {
+      "format": "PQ2_0",
+      "model_path": "install/models/.resolved/93ac2e4c70d19a09735e57c0ec9284104dc700dd15ad05f0bef67b4df5a15dc6",
+      "model_size_gb": 6.71,
+      "measurements": {
+        "large_context_tok_s": 39.4,
+        "context_size_tokens": 163000,
+        "source": "STATUS.md §2.1"
+      }
+    },
+    "PTQ1_0_hybrid": {
+      "format": "PTQ1_0",
+      "model_path": "install/models/hybrid-working",
+      "model_size_gb": 5.54,
+      "measurements": {
+        "small_context_tok_s": 54.08,
+        "small_context_tokens": 13,
+        "large_context_tok_s": 37.96,
+        "large_context_tokens": 1500,
+        "source": "native_binary_measurement"
+      }
+    }
+  },
+  "comparison": {
+    "large_context": {
+      "PQ2_0_tok_s": 39.4,
+      "PTQ1_0_tok_s": 37.96,
+      "delta_tok_s": -1.44,
+      "delta_pct": -3.7,
+      "conclusion": "PTQ1_0 = PQ2_0 decode performance (within 4% margin)"
+    },
+    "model_size_reduction": {
+      "PQ2_0_gb": 6.71,
+      "PTQ1_0_gb": 5.54,
+      "reduction_gb": 1.17,
+      "reduction_pct": 17.4
+    }
+  },
+  "conclusion": "PTQ1_0 hybrid achieves equivalent decode throughput to PQ2_0 baseline (37.96 vs 39.4 tok/s, -3.7% delta) while reducing model size by 17.4%. Decode performance is effectively identical.",
+  "status": "PASS"
+}

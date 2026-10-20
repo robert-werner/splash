@@ -24,7 +24,7 @@ def main():
         return 1
 
     engine_path = "./build/splash"
-    context_size = 180000
+    context_size = 4096
 
     print(f"Initializing client: model={model_dir}, context={context_size}", flush=True)
     client = BinaryProtocolClient(

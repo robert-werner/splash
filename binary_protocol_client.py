@@ -291,7 +291,7 @@ class BinaryProtocolClient:
         progress_reports = []
         
         start_time = time.time()
-        global_timeout = 120.0  # 2 minutes total timeout
+        global_timeout = 600.0  # 10 minutes total timeout
         
         while True:
             # Check global timeout
